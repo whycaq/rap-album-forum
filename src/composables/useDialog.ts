@@ -3,7 +3,7 @@
  * 统一管理对话框的打开/关闭状态
  */
 
-import { ref, Ref } from 'vue'
+import { ref } from 'vue'
 
 export interface DialogOptions {
   /** 默认是否打开 */

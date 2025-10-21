@@ -13,6 +13,11 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '首页' },
   },
   {
+    path: '/home-new',
+    name: 'LoggedInHome',
+    component: () => import('@/views/Home/LoggedInHome.vue')
+  },
+  {
     path: '/albums',
     name: 'AlbumList',
     component: () => import('@/views/Album/AlbumList.vue'),

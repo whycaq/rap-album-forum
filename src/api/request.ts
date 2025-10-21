@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, CancelTokenSource } from 'axios'
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import type { ApiResponse } from '@/types/common'
@@ -24,7 +24,7 @@ const requestMetrics: RequestMetrics[] = []
  * 创建axios实例
  * 统一的HTTP客户端，支持请求拦截、响应拦截、错误处理
  */
-const service: AxiosInstance = axios.create({
+const service = axios.create({
   baseURL: import.meta.env.VITE_APP_BASE_API || '/api',
   timeout: 15000,
   headers: {
@@ -36,7 +36,7 @@ const service: AxiosInstance = axios.create({
  * 生成请求唯一标识
  */
 function generateRequestKey(config: AxiosRequestConfig): string {
-  const { url, method, params, data } = config
+  const { url, method, params, data } = config as any
   return `${method}:${url}:${JSON.stringify(params)}:${JSON.stringify(data)}`
 }
 
@@ -73,7 +73,7 @@ function addPendingRequest(config: AxiosRequestConfig): void {
   
   // 创建新的取消token
   const source = axios.CancelToken.source()
-  config.cancelToken = source.token
+  ;(config as any).cancelToken = source.token
   pendingRequests.set(requestKey, source)
 }
 

@@ -81,6 +81,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { Album, Song } from '@/types/album'
+import { searchAlbums } from '@/api/spotify'
 
 const router = useRouter()
 
@@ -103,75 +104,94 @@ const rightIndex = computed(() => (currentIndex.value + 1) % albums.value.length
 /**
  * 加载专辑列表
  */
-function loadAlbums() {
-  albums.value = [
-    {
-      id: '1',
-      title: 'The Marshall Mathers LP',
-      artist: 'Eminem',
-      coverUrl: 'https://via.placeholder.com/300x300/1a1a1a/ffffff?text=Eminem',
-      releaseDate: '2000-05-23',
-      genre: 'Hip-Hop',
-      rating: 4.8,
-      ratingCount: 1500,
-      songCount: 18
-    },
-    {
-      id: '2',
-      title: 'To Pimp a Butterfly',
-      artist: 'Kendrick Lamar',
-      coverUrl: 'https://via.placeholder.com/300x300/2a2a2a/ffffff?text=Kendrick',
-      releaseDate: '2015-03-15',
-      genre: 'Hip-Hop',
-      rating: 4.9,
-      ratingCount: 2000,
-      songCount: 16
-    },
-    {
-      id: '3',
-      title: 'My Beautiful Dark Twisted Fantasy',
-      artist: 'Kanye West',
-      coverUrl: 'https://via.placeholder.com/300x300/3a3a3a/ffffff?text=Kanye',
-      releaseDate: '2010-11-22',
-      genre: 'Hip-Hop',
-      rating: 4.7,
-      ratingCount: 1800,
-      songCount: 13
-    },
-    {
-      id: '4',
-      title: 'Illmatic',
-      artist: 'Nas',
-      coverUrl: 'https://via.placeholder.com/300x300/4a4a4a/ffffff?text=Nas',
-      releaseDate: '1994-04-19',
-      genre: 'Hip-Hop',
-      rating: 4.9,
-      ratingCount: 1200,
-      songCount: 10
-    },
-    {
-      id: '5',
-      title: 'The Blueprint',
-      artist: 'Jay-Z',
-      coverUrl: 'https://via.placeholder.com/300x300/5a5a5a/ffffff?text=Jay-Z',
-      releaseDate: '2001-09-11',
-      genre: 'Hip-Hop',
-      rating: 4.6,
-      ratingCount: 900,
-      songCount: 15
-    },
-    {
-      id: '6',
-      title: 'Good Kid, M.A.A.D City',
-      artist: 'Kendrick Lamar',
-      coverUrl: 'https://via.placeholder.com/300x300/6a6a6a/ffffff?text=Kendrick2',
-      releaseDate: '2012-10-22',
-      genre: 'Hip-Hop',
-      rating: 4.8,
-      ratingCount: 1600,
-      songCount: 12
-    }
-  ]
+async function loadAlbums() {
+  try {
+    // 尝试从Spotify获取真实的专辑数据
+    const spotifyAlbums = await searchAlbums('hip hop', 6)
+    
+    albums.value = spotifyAlbums.map((album: any, index: number) => ({
+      id: album.id,
+      title: album.title,
+      artist: album.artist,
+      coverUrl: album.coverUrl || `https://via.placeholder.com/300x300/${(index + 1)}a${(index + 1)}a${(index + 1)}a/ffffff?text=${encodeURIComponent(album.artist.split(',')[0])}`,
+      releaseDate: album.releaseDate,
+      genre: album.genre || 'Hip-Hop',
+      rating: 4.5 + Math.random() * 0.5, // 模拟评分
+      ratingCount: Math.floor(Math.random() * 2000) + 500,
+      songCount: album.totalTracks || 12
+    }))
+  } catch (error) {
+    console.error('Failed to load albums from Spotify, using mock data:', error)
+    // 如果Spotify API失败，使用模拟数据
+    albums.value = [
+      {
+        id: '1',
+        title: 'The Marshall Mathers LP',
+        artist: 'Eminem',
+        coverUrl: 'https://via.placeholder.com/300x300/1a1a1a/ffffff?text=Eminem',
+        releaseDate: '2000-05-23',
+        genre: 'Hip-Hop',
+        rating: 4.8,
+        ratingCount: 1500,
+        songCount: 18
+      },
+      {
+        id: '2',
+        title: 'To Pimp a Butterfly',
+        artist: 'Kendrick Lamar',
+        coverUrl: 'https://via.placeholder.com/300x300/2a2a2a/ffffff?text=Kendrick',
+        releaseDate: '2015-03-15',
+        genre: 'Hip-Hop',
+        rating: 4.9,
+        ratingCount: 2000,
+        songCount: 16
+      },
+      {
+        id: '3',
+        title: 'My Beautiful Dark Twisted Fantasy',
+        artist: 'Kanye West',
+        coverUrl: 'https://via.placeholder.com/300x300/3a3a3a/ffffff?text=Kanye',
+        releaseDate: '2010-11-22',
+        genre: 'Hip-Hop',
+        rating: 4.7,
+        ratingCount: 1800,
+        songCount: 13
+      },
+      {
+        id: '4',
+        title: 'Illmatic',
+        artist: 'Nas',
+        coverUrl: 'https://via.placeholder.com/300x300/4a4a4a/ffffff?text=Nas',
+        releaseDate: '1994-04-19',
+        genre: 'Hip-Hop',
+        rating: 4.9,
+        ratingCount: 1200,
+        songCount: 10
+      },
+      {
+        id: '5',
+        title: 'The Blueprint',
+        artist: 'Jay-Z',
+        coverUrl: 'https://via.placeholder.com/300x300/5a5a5a/ffffff?text=Jay-Z',
+        releaseDate: '2001-09-11',
+        genre: 'Hip-Hop',
+        rating: 4.6,
+        ratingCount: 900,
+        songCount: 15
+      },
+      {
+        id: '6',
+        title: 'Good Kid, M.A.A.D City',
+        artist: 'Kendrick Lamar',
+        coverUrl: 'https://via.placeholder.com/300x300/6a6a6a/ffffff?text=Kendrick2',
+        releaseDate: '2012-10-22',
+        genre: 'Hip-Hop',
+        rating: 4.8,
+        ratingCount: 1600,
+        songCount: 12
+      }
+    ]
+  }
 }
 
 /**
@@ -294,7 +314,32 @@ onMounted(() => {
 
 .auth-buttons {
   display: flex;
-  gap: 12px;
+  gap: 16px;
+}
+
+.auth-buttons .el-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+  
+  &.el-button--primary {
+    background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+    border: none;
+    
+    &:hover {
+      background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+    }
+  }
 }
 
 .carousel-container {
@@ -397,7 +442,7 @@ onMounted(() => {
 
 .nav-btn {
   background: rgba(255, 255, 255, 0.1);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
   font-size: 32px;
   width: 60px;
@@ -410,7 +455,9 @@ onMounted(() => {
   
   &:hover {
     background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -465,29 +512,37 @@ onMounted(() => {
 .player-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .control-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
-  padding: 8px;
+  padding: 12px;
   border-radius: 50%;
+  backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
   
   &.play-pause {
-    background: #1890ff;
-    font-size: 24px;
+    background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+    border: none;
+    font-size: 20px;
+    padding: 14px;
     
     &:hover {
-      background: #40a9ff;
+      background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+      box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4);
+      transform: scale(1.1);
     }
   }
 }
@@ -499,17 +554,19 @@ onMounted(() => {
 
 .progress-bar {
   width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  backdrop-filter: blur(10px);
 }
 
 .progress {
   height: 100%;
-  background: #1890ff;
+  background: linear-gradient(90deg, #1890ff 0%, #40a9ff 100%);
   transition: width 0.1s ease;
+  border-radius: 3px;
 }
 
 .time-display {

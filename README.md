@@ -12,31 +12,39 @@
 
 ## 🚀 快速开始
 
+### ⚡ 3分钟快速启动
+
+**数据库已配置完成！** 只需3步即可开始开发：
+
+1. **创建 `.env` 文件** - 复制以下内容到项目根目录的 `.env` 文件：
+```bash
+VITE_SUPABASE_URL=https://kpaeljhvwqqqydrtltyj.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwYWVsamh2d3FxcXlkcnRsdHlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5OTA4NDUsImV4cCI6MjA3NjU2Njg0NX0.Uj-8-8m3OER0KkWkqL3GqoCLiOZr5acqWmzG35k6kUM
+VITE_API_BASE_URL=https://kpaeljhvwqqqydrtltyj.supabase.co
+```
+
+2. **启动开发服务器**
+```bash
+npm run dev
+```
+
+3. **开始开发** - 打开 http://localhost:5173 即可！
+
+📖 **详细指南**: 查看 [快速开始.md](./快速开始.md) 和 [SUPABASE_CONFIG.md](./SUPABASE_CONFIG.md)
+
 ### 环境要求
 
 - Node.js >= 16.0.0
 - npm >= 7.0.0
 
-### 安装依赖
+### 其他命令
 
-```bash
-npm install
-```
-
-### 开发模式
-
-```bash
-npm run dev
-```
-
-### 构建生产版本
-
+#### 构建生产版本
 ```bash
 npm run build
 ```
 
-### 预览生产构建
-
+#### 预览生产构建
 ```bash
 npm run preview
 ```
@@ -111,12 +119,40 @@ src/
 - `pinia` - 状态管理
 - `element-plus` - UI组件库
 - `axios` - HTTP客户端
+- `@supabase/supabase-js` - Supabase 客户端
 
 ### 开发依赖
 - `typescript` - TypeScript支持
 - `vite` - 构建工具
 - `sass` - CSS预处理器
 - `eslint` - 代码检查
+
+## 🗄️ 数据库架构
+
+项目使用 **Supabase (PostgreSQL)** 作为后端数据库。
+
+### 数据表
+- **users** - 用户信息
+- **albums** - 专辑信息
+- **songs** - 歌曲信息
+- **album_ratings** - 专辑评分
+- **album_comments** - 专辑评论
+- **forum_categories** - 论坛版块
+- **posts** - 论坛帖子
+- **post_replies** - 帖子回复
+- **favorites** - 用户收藏
+- **notifications** - 通知消息
+
+### 核心特性
+- ✅ 自动触发器（更新评分、回复数等）
+- ✅ Row Level Security (RLS) 权限控制
+- ✅ 全文搜索索引
+- ✅ 级联删除和约束检查
+- ✅ 性能优化索引
+
+详细架构说明请查看：
+- [数据库架构总结.md](./数据库架构总结.md) - 完整的表结构和关系
+- [Supabase配置指南.md](./Supabase配置指南.md) - 配置步骤和使用说明
 
 ## 🚧 开发计划
 
