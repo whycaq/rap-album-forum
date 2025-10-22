@@ -39,9 +39,9 @@ export interface Song {
   /** 歌曲标题 */
   title: string
   /** 时长（秒） */
-  duration: number
+  duration?: number
   /** 试听URL */
-  audioUrl: string
+  audioUrl?: string
   /** 歌词 */
   lyrics?: string
   /** 曲目编号 */

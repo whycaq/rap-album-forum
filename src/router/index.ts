@@ -30,6 +30,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '专辑详情' },
   },
   {
+    path: '/netease-demo',
+    name: 'NeteaseDemo',
+    component: () => import('@/views/Album/NeteaseDemo.vue'),
+    meta: { title: '网易云API测试' },
+  },
+  {
     path: '/forum',
     name: 'Forum',
     component: () => import('@/views/Forum/index.vue'),
@@ -83,6 +89,24 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/Admin/Posts.vue'),
         meta: { title: '帖子管理' },
       },
+      {
+        path: 'music-upload',
+        name: 'AdminMusicUpload',
+        component: () => import('@/views/Admin/MusicUpload.vue'),
+        meta: { title: '音乐上传' },
+      },
+      {
+        path: 'netease-import',
+        name: 'AdminNeteaseImport',
+        component: () => import('@/views/Admin/NeteaseImport.vue'),
+        meta: { title: '网易云导入' },
+      },
+      {
+        path: 'spotify-import',
+        name: 'AdminSpotifyImport',
+        component: () => import('@/views/Admin/SpotifyImport.vue'),
+        meta: { title: 'Spotify导入' },
+      },
     ],
   },
   {
@@ -96,7 +120,7 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) {
       return savedPosition
     } else {
@@ -109,7 +133,7 @@ const router = createRouter({
  * 全局前置路由守卫
  * 处理页面标题设置和权限验证
  */
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   // 设置页面标题
   document.title = `${to.meta.title || ''} - 说唱音乐专辑论坛`
 

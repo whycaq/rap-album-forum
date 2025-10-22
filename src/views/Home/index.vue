@@ -22,13 +22,10 @@
             'center': index === centerIndex,
             'right': index === rightIndex
           }"
-          @click="selectAlbum(album)"
+          @click="selectAlbum(album, index)"
         >
           <div class="album-cover">
             <img :src="album.coverUrl" :alt="album.title" />
-            <div class="album-overlay" v-if="index === centerIndex">
-              <span class="play-icon">▶</span>
-            </div>
           </div>
           <div class="album-info" v-if="index === centerIndex">
             <h3 class="album-title">{{ album.title }}</h3>
@@ -50,7 +47,7 @@
         <div class="current-track">
           <img :src="currentAlbum.coverUrl" class="current-cover" />
           <div class="track-info">
-            <div class="track-title">{{ currentSong?.title || '选择专辑开始播放' }}</div>
+            <div class="track-title">{{ currentSong?.title || currentAlbum.title }}</div>
             <div class="track-artist">{{ currentAlbum.artist }}</div>
           </div>
         </div>
@@ -77,11 +74,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { Album, Song } from '@/types/album'
-import { searchAlbums } from '@/api/spotify'
+import { getAlbumsFromSupabase, getSongsFromSupabase } from '@/api/album'
 
 const router = useRouter()
 
@@ -91,10 +88,15 @@ const currentIndex = ref(2) // 默认显示中间的专辑
 const translateX = ref(0)
 const currentAlbum = ref<Album | null>(null)
 const currentSong = ref<Song | null>(null)
+const albumSongs = ref<Song[]>([]) // 当前专辑的歌曲列表
+const currentSongIndex = ref(0) // 当前播放的歌曲索引
 const isPlaying = ref(false)
 const currentTime = ref(0)
 const duration = ref(0)
 const progress = ref(0)
+
+// 音频播放器
+const audioPlayer = ref<HTMLAudioElement | null>(null)
 
 // 计算属性
 const centerIndex = computed(() => currentIndex.value)
@@ -106,89 +108,71 @@ const rightIndex = computed(() => (currentIndex.value + 1) % albums.value.length
  */
 async function loadAlbums() {
   try {
-    // 尝试从Spotify获取真实的专辑数据
-    const spotifyAlbums = await searchAlbums('hip hop', 6)
+    console.log('🎵 正在从 Supabase 加载专辑数据...')
     
-    albums.value = spotifyAlbums.map((album: any, index: number) => ({
-      id: album.id,
-      title: album.title,
-      artist: album.artist,
-      coverUrl: album.coverUrl || `https://via.placeholder.com/300x300/${(index + 1)}a${(index + 1)}a${(index + 1)}a/ffffff?text=${encodeURIComponent(album.artist.split(',')[0])}`,
-      releaseDate: album.releaseDate,
-      genre: album.genre || 'Hip-Hop',
-      rating: 4.5 + Math.random() * 0.5, // 模拟评分
-      ratingCount: Math.floor(Math.random() * 2000) + 500,
-      songCount: album.totalTracks || 12
-    }))
+    // 从 Supabase 获取真实的专辑数据
+    const supabaseAlbums = await getAlbumsFromSupabase(6)
+    
+    if (supabaseAlbums && supabaseAlbums.length > 0) {
+      albums.value = supabaseAlbums
+      console.log(`✅ 成功加载 ${supabaseAlbums.length} 张专辑`)
+      ElMessage.success(`成功加载 ${supabaseAlbums.length} 张专辑`)
+    } else {
+      console.warn('⚠️ Supabase 中没有专辑数据，使用模拟数据')
+      ElMessage.warning('数据库中暂无专辑，请先上传专辑数据')
+      // 使用模拟数据
+      albums.value = [
+        {
+          id: '1',
+          title: 'The Marshall Mathers LP',
+          artist: 'Eminem',
+          coverUrl: 'https://via.placeholder.com/300x300/1a1a1a/ffffff?text=Eminem',
+          releaseDate: '2000-05-23',
+          genre: 'Hip-Hop',
+          rating: 4.8,
+          ratingCount: 1500,
+          songCount: 18
+        },
+        {
+          id: '2',
+          title: 'To Pimp a Butterfly',
+          artist: 'Kendrick Lamar',
+          coverUrl: 'https://via.placeholder.com/300x300/2a2a2a/ffffff?text=Kendrick',
+          releaseDate: '2015-03-15',
+          genre: 'Hip-Hop',
+          rating: 4.9,
+          ratingCount: 2000,
+          songCount: 16
+        },
+        {
+          id: '3',
+          title: 'My Beautiful Dark Twisted Fantasy',
+          artist: 'Kanye West',
+          coverUrl: 'https://via.placeholder.com/300x300/3a3a3a/ffffff?text=Kanye',
+          releaseDate: '2010-11-22',
+          genre: 'Hip-Hop',
+          rating: 4.7,
+          ratingCount: 1800,
+          songCount: 13
+        }
+      ]
+    }
   } catch (error) {
-    console.error('Failed to load albums from Spotify, using mock data:', error)
-    // 如果Spotify API失败，使用模拟数据
+    console.error('❌ 加载专辑失败:', error)
+    ElMessage.error('加载专辑失败，请检查网络连接')
+    
+    // 如果出错，使用模拟数据
     albums.value = [
       {
         id: '1',
-        title: 'The Marshall Mathers LP',
-        artist: 'Eminem',
-        coverUrl: 'https://via.placeholder.com/300x300/1a1a1a/ffffff?text=Eminem',
-        releaseDate: '2000-05-23',
+        title: '请先上传专辑',
+        artist: '暂无数据',
+        coverUrl: 'https://via.placeholder.com/300x300/1a1a1a/ffffff?text=No+Data',
+        releaseDate: '2024-01-01',
         genre: 'Hip-Hop',
-        rating: 4.8,
-        ratingCount: 1500,
-        songCount: 18
-      },
-      {
-        id: '2',
-        title: 'To Pimp a Butterfly',
-        artist: 'Kendrick Lamar',
-        coverUrl: 'https://via.placeholder.com/300x300/2a2a2a/ffffff?text=Kendrick',
-        releaseDate: '2015-03-15',
-        genre: 'Hip-Hop',
-        rating: 4.9,
-        ratingCount: 2000,
-        songCount: 16
-      },
-      {
-        id: '3',
-        title: 'My Beautiful Dark Twisted Fantasy',
-        artist: 'Kanye West',
-        coverUrl: 'https://via.placeholder.com/300x300/3a3a3a/ffffff?text=Kanye',
-        releaseDate: '2010-11-22',
-        genre: 'Hip-Hop',
-        rating: 4.7,
-        ratingCount: 1800,
-        songCount: 13
-      },
-      {
-        id: '4',
-        title: 'Illmatic',
-        artist: 'Nas',
-        coverUrl: 'https://via.placeholder.com/300x300/4a4a4a/ffffff?text=Nas',
-        releaseDate: '1994-04-19',
-        genre: 'Hip-Hop',
-        rating: 4.9,
-        ratingCount: 1200,
-        songCount: 10
-      },
-      {
-        id: '5',
-        title: 'The Blueprint',
-        artist: 'Jay-Z',
-        coverUrl: 'https://via.placeholder.com/300x300/5a5a5a/ffffff?text=Jay-Z',
-        releaseDate: '2001-09-11',
-        genre: 'Hip-Hop',
-        rating: 4.6,
-        ratingCount: 900,
-        songCount: 15
-      },
-      {
-        id: '6',
-        title: 'Good Kid, M.A.A.D City',
-        artist: 'Kendrick Lamar',
-        coverUrl: 'https://via.placeholder.com/300x300/6a6a6a/ffffff?text=Kendrick2',
-        releaseDate: '2012-10-22',
-        genre: 'Hip-Hop',
-        rating: 4.8,
-        ratingCount: 1600,
-        songCount: 12
+        rating: 0,
+        ratingCount: 0,
+        songCount: 0
       }
     ]
   }
@@ -197,42 +181,160 @@ async function loadAlbums() {
 /**
  * 选择专辑
  */
-function selectAlbum(album: Album) {
-  currentAlbum.value = album
-  // 模拟加载歌曲
-  const mockSongs = {
-    '1': { id: '1-1', title: 'The Real Slim Shady', duration: 284 },
-    '2': { id: '2-1', title: 'King Kunta', duration: 235 },
-    '3': { id: '3-1', title: 'Power', duration: 292 },
-    '4': { id: '4-1', title: 'N.Y. State of Mind', duration: 294 },
-    '5': { id: '5-1', title: 'Izzo (H.O.V.A.)', duration: 244 },
-    '6': { id: '6-1', title: 'Bitch, Don\'t Kill My Vibe', duration: 342 }
+async function selectAlbum(album: Album, index?: number) {
+  // 如果点击的不是中间的专辑，先切换到该专辑
+  if (index !== undefined && index !== centerIndex.value) {
+    currentIndex.value = index
+    updateTransform()
   }
   
-  currentSong.value = mockSongs[album.id as keyof typeof mockSongs] || null
-  isPlaying.value = true
-  ElMessage.success(`开始播放: ${album.title}`)
+  currentAlbum.value = album
+  
+  // 从 Supabase 加载专辑的歌曲列表
+  try {
+    console.log(`🎵 加载专辑 "${album.title}" 的歌曲...`)
+    const songs = await getSongsFromSupabase(album.id)
+    
+    if (songs && songs.length > 0) {
+      albumSongs.value = songs
+      currentSongIndex.value = 0
+      currentSong.value = songs[0]
+      
+      console.log(`✅ 加载了 ${songs.length} 首歌曲`)
+      console.log('第一首歌:', songs[0].title, '音频URL:', songs[0].audioUrl)
+      
+      // 如果有音频URL，播放音频
+      if (songs[0].audioUrl) {
+        await playSong(songs[0])
+        ElMessage.success(`正在播放: ${songs[0].title}`)
+      } else {
+        ElMessage.warning(`专辑 "${album.title}" 暂无可播放的音频`)
+        isPlaying.value = false
+      }
+    } else {
+      console.warn('⚠️ 专辑没有歌曲')
+      ElMessage.warning(`专辑 "${album.title}" 暂无歌曲`)
+      albumSongs.value = []
+      currentSong.value = {
+        id: `${album.id}-1`,
+        albumId: album.id,
+        title: album.title,
+        trackNumber: 1,
+        duration: 0,
+      }
+      isPlaying.value = false
+    }
+  } catch (error) {
+    console.error('❌ 加载歌曲失败:', error)
+    ElMessage.error('加载歌曲失败')
+    isPlaying.value = false
+  }
+}
+
+/**
+ * 播放歌曲
+ */
+async function playSong(song: Song) {
+  if (!song.audioUrl) {
+    ElMessage.warning('该歌曲暂无音频')
+    return
+  }
+  
+  // 创建或更新音频播放器
+  if (!audioPlayer.value) {
+    audioPlayer.value = new Audio()
+    
+    // 监听音频事件
+    audioPlayer.value.addEventListener('loadedmetadata', () => {
+      duration.value = audioPlayer.value?.duration || 0
+    })
+    
+    audioPlayer.value.addEventListener('timeupdate', () => {
+      currentTime.value = audioPlayer.value?.currentTime || 0
+      progress.value = duration.value > 0 ? (currentTime.value / duration.value) * 100 : 0
+    })
+    
+    audioPlayer.value.addEventListener('ended', () => {
+      nextSong()
+    })
+    
+    audioPlayer.value.addEventListener('error', (e) => {
+      console.error('音频播放错误:', e)
+      ElMessage.error('音频播放失败')
+      isPlaying.value = false
+    })
+  }
+  
+  // 设置音频源并播放
+  audioPlayer.value.src = song.audioUrl
+  audioPlayer.value.load()
+  
+  try {
+    await audioPlayer.value.play()
+    isPlaying.value = true
+    console.log('🎵 开始播放:', song.title)
+  } catch (error) {
+    console.error('播放失败:', error)
+    ElMessage.error('播放失败，请检查音频链接')
+    isPlaying.value = false
+  }
 }
 
 /**
  * 切换播放状态
  */
 function togglePlay() {
-  isPlaying.value = !isPlaying.value
+  if (!audioPlayer.value) return
+  
+  if (isPlaying.value) {
+    audioPlayer.value.pause()
+    isPlaying.value = false
+  } else {
+    audioPlayer.value.play()
+    isPlaying.value = true
+  }
 }
 
 /**
  * 播放下一首
  */
 function nextSong() {
-  ElMessage.info('下一首')
+  if (albumSongs.value.length === 0) {
+    ElMessage.info('没有更多歌曲')
+    return
+  }
+  
+  currentSongIndex.value = (currentSongIndex.value + 1) % albumSongs.value.length
+  currentSong.value = albumSongs.value[currentSongIndex.value]
+  
+  if (currentSong.value.audioUrl) {
+    playSong(currentSong.value)
+    ElMessage.success(`正在播放: ${currentSong.value.title}`)
+  } else {
+    ElMessage.warning('该歌曲暂无音频')
+    isPlaying.value = false
+  }
 }
 
 /**
  * 播放上一首
  */
 function prevSong() {
-  ElMessage.info('上一首')
+  if (albumSongs.value.length === 0) {
+    ElMessage.info('没有更多歌曲')
+    return
+  }
+  
+  currentSongIndex.value = (currentSongIndex.value - 1 + albumSongs.value.length) % albumSongs.value.length
+  currentSong.value = albumSongs.value[currentSongIndex.value]
+  
+  if (currentSong.value.audioUrl) {
+    playSong(currentSong.value)
+    ElMessage.success(`正在播放: ${currentSong.value.title}`)
+  } else {
+    ElMessage.warning('该歌曲暂无音频')
+    isPlaying.value = false
+  }
 }
 
 /**
@@ -241,6 +343,10 @@ function prevSong() {
 function prevAlbum() {
   currentIndex.value = (currentIndex.value - 1 + albums.value.length) % albums.value.length
   updateTransform()
+  // 自动播放新选中的专辑
+  if (albums.value[currentIndex.value]) {
+    selectAlbum(albums.value[currentIndex.value])
+  }
 }
 
 /**
@@ -249,6 +355,10 @@ function prevAlbum() {
 function nextAlbum() {
   currentIndex.value = (currentIndex.value + 1) % albums.value.length
   updateTransform()
+  // 自动播放新选中的专辑
+  if (albums.value[currentIndex.value]) {
+    selectAlbum(albums.value[currentIndex.value])
+  }
 }
 
 /**
@@ -269,14 +379,21 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-onMounted(() => {
-  loadAlbums()
-  // 初始化选择中间的专辑
-  setTimeout(() => {
-    if (albums.value.length > 0) {
-      selectAlbum(albums.value[centerIndex.value])
-    }
-  }, 100)
+onMounted(async () => {
+  await loadAlbums()
+  
+  // 根据专辑数量调整初始索引
+  if (albums.value.length > 0) {
+    currentIndex.value = Math.min(1, albums.value.length - 1)
+    
+    // 自动播放中间的专辑
+    setTimeout(() => {
+      if (albums.value.length > 0) {
+        selectAlbum(albums.value[centerIndex.value])
+        isPlaying.value = true // 确保自动开始播放
+      }
+    }, 300)
+  }
   
   // 监听窗口大小变化
   window.addEventListener('resize', updateTransform)
@@ -361,16 +478,25 @@ onMounted(() => {
 .album-card {
   width: 300px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   
   &.left, &.right {
-    opacity: 0.3;
-    transform: scale(0.8);
+    opacity: 0.4;
+    transform: scale(0.85);
+    
+    &:hover {
+      opacity: 0.6;
+      transform: scale(0.9);
+    }
   }
   
   &.center {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1.05);
+    
+    .album-cover {
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    }
   }
 }
 
@@ -392,24 +518,6 @@ onMounted(() => {
   }
 }
 
-.album-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 1;
-  
-  .play-icon {
-    font-size: 48px;
-    color: #fff;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-  }
-}
 
 .album-info {
   text-align: center;

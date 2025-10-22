@@ -33,7 +33,16 @@ export const useUserStore = defineStore('user', () => {
    * 登出
    * 清除用户信息和token
    */
-  function logout() {
+  async function logout() {
+    // 先从 Supabase 登出
+    try {
+      const { supabase } = await import('@/utils/supabase')
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Supabase登出失败:', error)
+    }
+    
+    // 清除本地状态
     userInfo.value = null
     token.value = ''
     localStorage.removeItem('userInfo')
@@ -44,7 +53,33 @@ export const useUserStore = defineStore('user', () => {
    * 检查登录状态
    * 从本地存储恢复用户信息
    */
-  function checkLoginStatus() {
+  async function checkLoginStatus() {
+    // 先尝试从 Supabase 获取当前会话
+    try {
+      const { supabase, TABLES } = await import('@/utils/supabase')
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        // 如果有 Supabase 会话，获取用户信息
+        const { data: userProfile } = await supabase
+          .from(TABLES.USERS)
+          .select('*')
+          .eq('auth_id', session.user.id)
+          .single()
+          
+        if (userProfile) {
+          userInfo.value = userProfile
+          token.value = session.access_token
+          localStorage.setItem('userInfo', JSON.stringify(userProfile))
+          localStorage.setItem('token', session.access_token)
+          return
+        }
+      }
+    } catch (error) {
+      console.error('检查Supabase会话失败:', error)
+    }
+    
+    // 如果没有 Supabase 会话，检查 localStorage
     const storedUserInfo = localStorage.getItem('userInfo')
     const storedToken = localStorage.getItem('token')
     

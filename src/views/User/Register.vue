@@ -172,10 +172,26 @@ async function handleRegister() {
     // 保存用户信息和token
     userStore.setUserInfo(response.user, response.token)
     
-    ElMessage.success('注册成功')
+    ElMessage.success('注册成功！欢迎加入')
     router.push('/')
   } catch (error: any) {
     console.error('注册失败:', error)
+    
+    // 处理邮箱验证情况
+    if (error.message === 'EMAIL_VERIFICATION_REQUIRED') {
+      ElMessage({
+        type: 'warning',
+        message: '注册成功！请查收邮箱验证邮件，验证后即可登录',
+        duration: 5000,
+      })
+      // 3秒后跳转到登录页
+      setTimeout(() => {
+        router.push('/login')
+      }, 3000)
+      return
+    }
+    
+    // 其他错误
     ElMessage.error(error.message || '注册失败，请稍后重试')
   } finally {
     loading.value = false

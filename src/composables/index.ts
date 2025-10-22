@@ -6,4 +6,5 @@ export * from './useRequest'
 export * from './useDebounce'
 export * from './useDialog'
 export * from './useClipboard'
+export * from './useAudioPlayer'
 
