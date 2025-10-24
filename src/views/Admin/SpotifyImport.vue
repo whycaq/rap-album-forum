@@ -89,6 +89,21 @@ VITE_SPOTIFY_CLIENT_SECRET=你的Client_Secret</pre>
           <p class="hint">
             自动导入Eminem、Kendrick Lamar、Drake等顶级说唱艺人的专辑
           </p>
+          
+          <el-divider style="margin: 20px 0" />
+          
+          <el-button 
+            type="primary" 
+            size="large"
+            @click="importJColeAlbums"
+            :loading="importing"
+            :disabled="!configReady"
+          >
+            🎤 快速导入J. Cole经典专辑
+          </el-button>
+          <p class="hint">
+            导入《2014 Forest Hills Drive》和《4 Your Eyes Only》
+          </p>
         </div>
       </el-card>
 
@@ -418,6 +433,94 @@ async function importRecommended() {
   } catch (error) {
     console.error('导入推荐专辑失败:', error)
     addLog(`❌ 导入失败: ${error}`, 'error')
+    ElMessage.error('导入失败')
+  } finally {
+    importing.value = false
+  }
+}
+
+async function importJColeAlbums() {
+  const confirmed = await ElMessageBox.confirm(
+    '将导入J. Cole的两张经典专辑：《2014 Forest Hills Drive》和《4 Your Eyes Only》，预计1分钟。确定继续吗？',
+    '导入J. Cole专辑',
+    {
+      confirmButtonText: '开始导入',
+      cancelButtonText: '取消',
+      type: 'info'
+    }
+  ).catch(() => false)
+
+  if (!confirmed) return
+
+  importing.value = true
+  importProgress.value = 0
+  importLogs.value = []
+  importStats.value = { success: 0, failed: 0, total: 2 }
+
+  addLog('🎤 开始导入J. Cole专辑', 'info')
+
+  const albums = [
+    { name: '2014 Forest Hills Drive', artist: 'J. Cole' },
+    { name: '4 Your Eyes Only', artist: 'J. Cole' }
+  ]
+
+  try {
+    for (let i = 0; i < albums.length; i++) {
+      const album = albums[i]
+      
+      importStatus.value = `导入中 ${i + 1}/${albums.length}: ${album.name}`
+      addLog(`搜索 ${album.name}...`, 'info')
+      
+      // 搜索专辑
+      const searchQuery = `${album.name} ${album.artist}`
+      const searchResults = await SpotifyService.searchAlbums(searchQuery, 5)
+      
+      if (searchResults.length === 0) {
+        addLog(`❌ 未找到专辑: ${album.name}`, 'error')
+        importStats.value.failed++
+        importProgress.value = Math.round(((i + 1) / albums.length) * 100)
+        continue
+      }
+      
+      const matchedAlbum = searchResults[0]
+      addLog(`✅ 找到专辑: ${matchedAlbum.title} (${matchedAlbum.releaseDate})`, 'success')
+      
+      // 导入到Supabase
+      addLog(`💾 导入到数据库...`, 'info')
+      const dbId = await SpotifyToSupabaseService.importAlbum(matchedAlbum.id)
+      
+      if (dbId) {
+        importStats.value.success++
+        importedIds.value.push(matchedAlbum.id)
+        importedAlbums.value.push(matchedAlbum)
+        addLog(`✅ ${matchedAlbum.title} 导入成功！数据库ID: ${dbId}`, 'success')
+      } else {
+        importStats.value.failed++
+        addLog(`❌ ${matchedAlbum.title} 导入失败`, 'error')
+      }
+      
+      importProgress.value = Math.round(((i + 1) / albums.length) * 100)
+      
+      // 避免请求过快
+      if (i < albums.length - 1) {
+        await sleep(1000)
+      }
+    }
+
+    importStatus.value = '导入完成！'
+    
+    if (importStats.value.success > 0) {
+      addLog(`🎉 成功导入${importStats.value.success}张J. Cole专辑`, 'success')
+      ElMessage.success(`成功导入 ${importStats.value.success} 张专辑！`)
+      loadImportedAlbums()
+    } else {
+      addLog('😢 没有成功导入任何专辑', 'error')
+      ElMessage.warning('没有成功导入任何专辑，请检查网络连接')
+    }
+    
+  } catch (error) {
+    console.error('导入J. Cole专辑失败:', error)
+    addLog(`❌ 导入异常: ${error}`, 'error')
     ElMessage.error('导入失败')
   } finally {
     importing.value = false

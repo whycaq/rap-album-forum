@@ -13,11 +13,6 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '首页' },
   },
   {
-    path: '/home-new',
-    name: 'LoggedInHome',
-    component: () => import('@/views/Home/LoggedInHome.vue')
-  },
-  {
     path: '/albums',
     name: 'AlbumList',
     component: () => import('@/views/Album/AlbumList.vue'),
@@ -30,10 +25,10 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '专辑详情' },
   },
   {
-    path: '/netease-demo',
-    name: 'NeteaseDemo',
-    component: () => import('@/views/Album/NeteaseDemo.vue'),
-    meta: { title: '网易云API测试' },
+    path: '/album/:id/rating',
+    name: 'AlbumRating',
+    component: () => import('@/views/Album/AlbumRating.vue'),
+    meta: { title: '专辑评分' },
   },
   {
     path: '/forum',

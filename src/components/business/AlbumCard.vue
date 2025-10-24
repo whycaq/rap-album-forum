@@ -34,7 +34,7 @@
           v-model="album.rating"
           disabled
           :show-score="showRating"
-          text-color="#ff9900"
+          text-color="#73BA9B"
         />
         <span v-if="showDate" class="release-date">
           {{ formatDate(album.releaseDate) }}

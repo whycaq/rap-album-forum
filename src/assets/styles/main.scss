@@ -2,16 +2,20 @@
  * 全局样式
  */
 
-// 颜色变量
-$primary-color: #1890ff;
+// 颜色变量 - 黑色和绿色主题
+$primary-color: #73BA9B; // 主色调：绿色
+$primary-dark: #5A9B7F; // 深绿色
+$primary-light: #8BC4A8; // 浅绿色
 $success-color: #52c41a;
-$warning-color: #faad14;
+$warning-color: #73BA9B; // 使用主色调绿色
 $error-color: #f5222d;
-$text-color: #333333;
-$text-color-secondary: #666666;
-$text-color-light: #999999;
-$border-color: #d9d9d9;
-$background-color: #f5f5f5;
+$text-color: #ffffff; // 白色文字
+$text-color-secondary: rgba(255, 255, 255, 0.7); // 半透明白色
+$text-color-light: rgba(255, 255, 255, 0.5); // 更淡的白色
+$border-color: rgba(115, 186, 155, 0.3); // 绿色边框
+$background-color: #000000; // 黑色背景
+$background-dark: #0a0a0a; // 更深的黑色
+$background-light: #1a1a1a; // 较浅的黑色
 
 // 间距变量
 $spacing-xs: 4px;
@@ -44,15 +48,15 @@ $box-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #0a0a0a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: #73BA9B;
   border-radius: 4px;
 
   &:hover {
-    background: #555;
+    background: #8BC4A8;
   }
 }
 

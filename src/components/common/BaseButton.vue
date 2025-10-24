@@ -113,14 +113,14 @@ function handleClick(event: MouseEvent) {
 
   // 类型样式
   &--primary {
-    background-color: #1890ff;
-    border-color: #1890ff;
+    background-color: #73BA9B;
+    border-color: #73BA9B;
     color: #fff;
 
     &.is-plain {
-      background-color: #e6f7ff;
-      border-color: #91d5ff;
-      color: #1890ff;
+      background-color: rgba(115, 186, 155, 0.1);
+      border-color: rgba(115, 186, 155, 0.3);
+      color: #73BA9B;
     }
   }
 
