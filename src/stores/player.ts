@@ -94,6 +94,45 @@ export const usePlayerStore = defineStore('player', () => {
   }
 
   /**
+   * 播放歌曲（简化版本，用于单曲播放）
+   */
+  async function playSong(songInfo: any) {
+    // 确保播放器已初始化
+    if (!audioPlayer.value) {
+      initPlayer()
+    }
+    
+    if (!songInfo.audioUrl) {
+      ElMessage.warning('该歌曲暂无音频')
+      return
+    }
+    
+    // 构造 Song 对象
+    const song: Song = {
+      id: songInfo.id,
+      albumId: songInfo.albumId || '',
+      title: songInfo.title,
+      trackNumber: 0,
+      duration: songInfo.duration || 0,
+      audioUrl: songInfo.audioUrl
+    }
+    
+    // 构造 Album 对象
+    const album: Album = {
+      id: songInfo.albumId || '',
+      title: songInfo.albumTitle || 'Unknown Album',
+      artist: songInfo.artist || 'Unknown Artist',
+      coverUrl: songInfo.albumCover || '',
+      releaseDate: '',
+      genre: '',
+      rating: 0,
+      ratingCount: 0
+    }
+    
+    await play(song, album, [song], 0)
+  }
+
+  /**
    * 暂停播放
    */
   function pause() {
@@ -217,6 +256,7 @@ export const usePlayerStore = defineStore('player', () => {
     // 方法
     initPlayer,
     play,
+    playSong,
     pause,
     resume,
     toggle,

@@ -202,13 +202,64 @@
         </div>
       </section>
     </div>
+
+    <!-- AOTY 风格播放器控制栏 -->
+    <div 
+      v-if="playerStore.hasCurrentSong" 
+      class="player-bar"
+      :class="{ 'is-hidden': isPlayerHidden }"
+      @mouseenter="showPlayer"
+      @mouseleave="startHideTimer"
+    >
+      <div class="player-container">
+        <!-- 歌曲信息 -->
+        <div class="player-song-info">
+          <img 
+            v-if="playerStore.currentAlbum" 
+            :src="playerStore.currentAlbum.coverUrl" 
+            class="player-cover"
+            alt="Album Cover"
+          />
+          <div class="player-text">
+            <div class="player-title">{{ playerStore.currentSong?.title || 'Unknown Track' }}</div>
+            <div class="player-artist">{{ playerStore.currentAlbum?.artist || 'Unknown Artist' }}</div>
+          </div>
+        </div>
+
+        <!-- 播放控制 -->
+        <div class="player-controls">
+          <button class="control-btn" @click="playerStore.playPrev" :disabled="!canPlayPrev">
+            <el-icon><DArrowLeft /></el-icon>
+          </button>
+          <button class="control-btn primary" @click="playerStore.toggle">
+            <el-icon v-if="playerStore.isPlaying"><VideoPause /></el-icon>
+            <el-icon v-else><VideoPlay /></el-icon>
+          </button>
+          <button class="control-btn" @click="playerStore.playNext" :disabled="!canPlayNext">
+            <el-icon><DArrowRight /></el-icon>
+          </button>
+        </div>
+
+        <!-- 进度条和时间 -->
+        <div class="player-progress-section">
+          <span class="time-label">{{ playerStore.formattedCurrentTime }}</span>
+          <div class="progress-bar-wrapper" @click="handleProgressClick">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: playerStore.progress + '%' }"></div>
+              <div class="progress-handle" :style="{ left: playerStore.progress + '%' }"></div>
+            </div>
+          </div>
+          <span class="time-label">{{ playerStore.formattedDuration }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, VideoPlay, Star, User, SwitchButton, Refresh, Clock, Headset } from '@element-plus/icons-vue'
+import { Search, VideoPlay, VideoPause, Star, User, SwitchButton, Refresh, Clock, Headset, DArrowLeft, DArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { useAlbumStore } from '@/stores/album'
@@ -382,8 +433,47 @@ function handleLogout() {
   router.push('/')  // 返回首页（未登录状态）
 }
 
+// 播放器自动隐藏逻辑
+const isPlayerHidden = ref(false)
+let hideTimer: number | null = null
+
+const canPlayPrev = computed(() => {
+  return playerStore.playlist.length > 0 && playerStore.currentIndex > 0
+})
+
+const canPlayNext = computed(() => {
+  return playerStore.playlist.length > 0 && playerStore.currentIndex < playerStore.playlist.length - 1
+})
+
+function showPlayer() {
+  isPlayerHidden.value = false
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+    hideTimer = null
+  }
+}
+
+function startHideTimer() {
+  hideTimer = window.setTimeout(() => {
+    isPlayerHidden.value = true
+  }, 3000) // 3秒后自动隐藏
+}
+
+function handleProgressClick(event: MouseEvent) {
+  const progressBar = event.currentTarget as HTMLElement
+  const rect = progressBar.getBoundingClientRect()
+  const clickX = event.clientX - rect.left
+  const percentage = (clickX / rect.width) * 100
+  const newTime = (percentage / 100) * playerStore.duration
+  playerStore.seek(newTime)
+}
+
 onMounted(() => {
   loadAlbums()
+  playerStore.initPlayer()
+  
+  // 启动自动隐藏
+  startHideTimer()
 })
 </script>
 
@@ -1139,7 +1229,7 @@ onMounted(() => {
   }
   
   .main-container {
-    padding: 32px 16px 100px;
+    padding: 32px 16px 120px;
   }
   
   .albums-grid {
@@ -1176,5 +1266,220 @@ onMounted(() => {
       }
     }
   }
+  
+  .player-bar {
+    &.is-hidden {
+      transform: translateY(calc(100% - 4px));
+    }
+  }
+  
+  .player-container {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  
+  .player-song-info {
+    width: 100%;
+  }
+  
+  .player-progress-section {
+    width: 100%;
+  }
+}
+
+// AOTY 风格播放器控制栏
+.player-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: rgba(28, 28, 30, 0.98);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.3s ease;
+  
+  &.is-hidden {
+    transform: translateY(calc(100% - 6px));
+    
+    &:hover {
+      transform: translateY(0);
+    }
+  }
+  
+  // 底部指示条（鼠标触发区域）
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px 2px 0 0;
+  }
+}
+
+.player-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 32px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+}
+
+// 歌曲信息
+.player-song-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.player-cover {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.player-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.player-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 2px;
+}
+
+.player-artist {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 播放控制按钮
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  .el-icon {
+    font-size: 18px;
+  }
+  
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
+  
+  &.primary {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    
+    .el-icon {
+      font-size: 20px;
+    }
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+// 进度条区域
+.player-progress-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-self: end;
+  width: 100%;
+  max-width: 400px;
+}
+
+.time-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-variant-numeric: tabular-nums;
+  min-width: 40px;
+  text-align: center;
+}
+
+.progress-bar-wrapper {
+  flex: 1;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.progress-bar {
+  position: relative;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: visible;
+  
+  &:hover {
+    .progress-handle {
+      opacity: 1;
+    }
+  }
+}
+
+.progress-fill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.progress-handle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 </style>
