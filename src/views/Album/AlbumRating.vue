@@ -1,175 +1,248 @@
 <template>
   <div class="album-rating-page" v-if="album">
-    <!-- 顶部导航栏 -->
-    <header class="rating-header">
-      <button class="back-button" @click="router.back()">
-        <el-icon><ArrowLeft /></el-icon>
-        返回专辑
-      </button>
-      <div class="album-info-mini">
-        <img :src="album.coverUrl" :alt="album.title" class="mini-cover" />
-        <div class="mini-info">
-          <h2>{{ album.title }}</h2>
-          <p>{{ album.artist }}</p>
-        </div>
+    <!-- AOTY 风格导航栏 -->
+    <header class="aoty-header">
+      <div class="header-container">
+        <button class="back-btn" @click="router.back()">
+          <el-icon><ArrowLeft /></el-icon>
+          <span>Back</span>
+        </button>
       </div>
     </header>
 
-    <!-- 评分和评论内容 -->
-    <div class="rating-content">
-      <div class="content-container">
-        
-        <!-- 评分卡片 -->
-        <div class="rating-card">
-          <h3 class="section-title">为这张专辑评分</h3>
-          
-          <div class="rating-display">
-            <div class="average-rating">
-              <div class="rating-score">{{ album.rating.toFixed(1) }}</div>
-              <el-rate 
-                :model-value="album.rating" 
-                disabled 
-                :show-score="false"
-                size="large"
-              />
-              <div class="rating-count">{{ album.ratingCount || 0 }} 人评分</div>
-            </div>
-            
-            <!-- 用户评分 -->
-            <div class="user-rating" v-if="userStore.isLoggedIn">
-              <p class="rating-prompt">你的评分：</p>
-              <el-rate 
-                v-model="userRating" 
-                :show-score="false"
-                size="large"
-                @change="handleRateAlbum"
-              />
-              <p class="rating-hint" v-if="userRating > 0">{{ getRatingText(userRating) }}</p>
-            </div>
-            <div class="login-prompt" v-else>
-              <p>登录后即可评分</p>
-              <el-button type="primary" size="small" @click="router.push('/login')">
-                立即登录
-              </el-button>
+    <!-- 专辑信息和评分 -->
+    <div class="album-section">
+      <div class="album-container">
+        <!-- 专辑卡片 -->
+        <div class="album-card">
+          <img :src="album.coverUrl" :alt="album.title" class="album-cover" />
+          <div class="album-details">
+            <h1 class="album-title">{{ album.title }}</h1>
+            <p class="album-artist">{{ album.artist }}</p>
+            <div class="album-meta">
+              <span>{{ album.releaseDate.split('-')[0] }}</span>
+              <span>·</span>
+              <span>{{ album.genre }}</span>
             </div>
           </div>
         </div>
 
-        <!-- 评论区 -->
-        <div class="comments-section">
-          <div class="comments-header">
-            <h3 class="section-title">专辑评论 ({{ comments.length }})</h3>
-            <el-select v-model="commentSort" size="small" style="width: 120px">
-              <el-option label="最新" value="latest" />
-              <el-option label="最热" value="hot" />
-            </el-select>
+        <!-- 评分区域 -->
+        <div class="rating-section">
+          <!-- 平均评分展示 -->
+          <div class="average-section">
+            <div class="score-circle">
+              <svg class="circle-svg" viewBox="0 0 120 120">
+                <circle 
+                  class="circle-bg" 
+                  cx="60" 
+                  cy="60" 
+                  r="54"
+                />
+                <circle 
+                  class="circle-progress" 
+                  cx="60" 
+                  cy="60" 
+                  r="54"
+                  :style="{ 
+                    stroke: getScoreColor(averageScore),
+                    strokeDashoffset: getCircleOffset(averageScore) 
+                  }"
+                />
+              </svg>
+              <div class="score-value" :style="{ color: getScoreColor(averageScore) }">
+                {{ averageScore }}
+              </div>
+            </div>
+            <div class="score-info">
+              <div class="score-label">Average Rating</div>
+              <div class="score-count">{{ album.ratingCount || 0 }} ratings</div>
+            </div>
           </div>
 
-          <!-- 发表评论 -->
-          <div class="comment-input-box" v-if="userStore.isLoggedIn">
-            <el-avatar :size="40" :src="userStore.userInfo?.avatar" class="user-avatar">
-              <span>{{ userStore.userInfo?.username?.charAt(0).toUpperCase() }}</span>
-            </el-avatar>
-            <div class="input-wrapper">
-              <el-input
+          <!-- 用户评分 + 评论 -->
+          <div class="user-rating-section" v-if="userStore.isLoggedIn">
+            <h3 class="subsection-title">Rate & Review</h3>
+            
+            <!-- 评分和圆环一起 -->
+            <div class="rating-input-wrapper">
+              <div class="user-score-visual">
+                <div class="user-score-circle">
+                  <svg class="circle-svg" viewBox="0 0 100 100">
+                    <circle 
+                      class="circle-bg" 
+                      cx="50" 
+                      cy="50" 
+                      r="45"
+                    />
+                <circle 
+                  class="circle-progress-user" 
+                  cx="50" 
+                  cy="50" 
+                  r="45"
+                  :style="{ 
+                    stroke: getScoreColor(userRating),
+                    strokeDashoffset: getCircleOffsetUser(userRating)
+                  }"
+                />
+                  </svg>
+                  <div class="user-score-value" :style="{ color: getScoreColor(userRating) }">
+                    {{ userRating }}
+                  </div>
+                </div>
+                <div class="user-score-label">{{ getScoreLabel(userRating) }}</div>
+              </div>
+              
+              <div class="slider-wrapper">
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  v-model="userRating"
+                  class="user-slider"
+                  :style="{
+                    '--slider-color': getScoreColor(userRating)
+                  }"
+                />
+                <div class="slider-range">
+                  <span>0</span>
+                  <span>100</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 评论输入 -->
+            <div class="review-input-section">
+              <textarea 
                 v-model="newComment"
-                type="textarea"
-                :rows="3"
-                placeholder="说说你对这张专辑的看法..."
-                :maxlength="500"
-                show-word-limit
-              />
-              <div class="input-actions">
-                <el-button @click="newComment = ''" :disabled="!newComment.trim()">
-                  取消
-                </el-button>
-                <el-button type="primary" @click="handleSubmitComment" :disabled="!newComment.trim()">
-                  发表评论
-                </el-button>
+                class="review-textarea"
+                placeholder="Write your review..."
+                :maxlength="1000"
+              ></textarea>
+              <div class="review-actions">
+                <span class="char-count">{{ newComment.length }}/1000</span>
+                <button 
+                  class="submit-btn" 
+                  @click="handleSubmitReview"
+                  :disabled="!newComment.trim()"
+                >
+                  Submit Review
+                </button>
               </div>
             </div>
           </div>
-          <div class="login-prompt-box" v-else>
-            <p>登录后即可发表评论</p>
-            <el-button type="primary" @click="router.push('/login')">立即登录</el-button>
+          
+          <div class="login-box" v-else>
+            <p>Sign in to rate and review this album</p>
+            <button class="login-btn" @click="router.push('/login')">Sign In</button>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- 评论列表 -->
-          <div class="comments-list">
-            <div 
-              v-for="comment in sortedComments" 
-              :key="comment.id"
-              class="comment-item"
-            >
-              <el-avatar :size="40" :src="comment.userAvatar" class="comment-avatar">
-                <span>{{ comment.username?.charAt(0).toUpperCase() }}</span>
-              </el-avatar>
-              
-              <div class="comment-content">
-                <div class="comment-header">
-                  <span class="comment-username">{{ comment.username }}</span>
-                  <span class="comment-time">{{ formatCommentTime(comment.createdAt) }}</span>
-                </div>
-                
-                <p class="comment-text">{{ comment.content }}</p>
-                
-                <div class="comment-actions">
-                  <button class="action-btn" @click="handleLikeComment(comment)">
-                    <el-icon><StarFilled v-if="comment.isLiked" /><Star v-else /></el-icon>
-                    <span>{{ comment.likes || 0 }}</span>
-                  </button>
-                  <button class="action-btn" @click="handleReplyComment(comment)">
-                    <el-icon><ChatDotRound /></el-icon>
-                    <span>回复</span>
-                  </button>
-                </div>
+    <!-- 评论区 - AOTY 风格 -->
+    <div class="reviews-section">
+      <div class="reviews-container">
+        <div class="reviews-header">
+          <h2 class="reviews-title">Popular User Reviews</h2>
+          <button class="view-more-btn">VIEW MORE</button>
+        </div>
 
-                <!-- 回复输入框 -->
-                <div v-if="replyingTo === comment.id" class="reply-input-box">
-                  <el-input
-                    v-model="replyContent"
-                    type="textarea"
-                    :rows="2"
-                    :placeholder="`回复 @${comment.username}...`"
-                    :maxlength="300"
-                  />
-                  <div class="reply-actions">
-                    <el-button size="small" @click="cancelReply">取消</el-button>
-                    <el-button size="small" type="primary" @click="handleSubmitReply(comment)">
-                      发送
-                    </el-button>
+        <!-- 评论列表 -->
+        <div class="reviews-list">
+          <div 
+            v-for="comment in sortedComments" 
+            :key="comment.id"
+            class="review-card"
+          >
+            <div class="review-left">
+              <img :src="album.coverUrl" :alt="album.title" class="review-album-cover" />
+              <div class="review-album-info">
+                <div class="review-album-title">{{ album.title }}</div>
+                <div class="review-album-artist">{{ album.artist }}</div>
+              </div>
+            </div>
+
+            <div class="review-main">
+              <div class="review-header">
+                <div class="reviewer-info">
+                  <div class="reviewer-avatar">
+                    {{ comment.username?.charAt(0).toUpperCase() }}
                   </div>
-                </div>
-
-                <!-- 回复列表 -->
-                <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
-                  <div 
-                    v-for="reply in comment.replies" 
-                    :key="reply.id"
-                    class="reply-item"
-                  >
-                    <el-avatar :size="32" :src="reply.userAvatar" class="reply-avatar">
-                      <span>{{ reply.username?.charAt(0).toUpperCase() }}</span>
-                    </el-avatar>
-                    <div class="reply-content">
-                      <span class="reply-username">{{ reply.username }}</span>
-                      <span class="reply-text">{{ reply.content }}</span>
-                      <span class="reply-time">{{ formatCommentTime(reply.createdAt) }}</span>
+                  <div class="reviewer-name">{{ comment.username }}</div>
+                  <!-- 小圆环评分 -->
+                  <div class="review-score-circle">
+                    <svg class="mini-circle-svg" viewBox="0 0 40 40">
+                      <circle 
+                        class="mini-circle-bg" 
+                        cx="20" 
+                        cy="20" 
+                        r="18"
+                      />
+                      <circle 
+                        class="mini-circle-progress" 
+                        cx="20" 
+                        cy="20" 
+                        r="18"
+                        :style="{ 
+                          stroke: getScoreColor(comment.userScore || 75),
+                          strokeDashoffset: getMiniCircleOffset(comment.userScore || 75)
+                        }"
+                      />
+                    </svg>
+                    <div class="mini-score-value" :style="{ color: getScoreColor(comment.userScore || 75) }">
+                      {{ comment.userScore || 75 }}
                     </div>
                   </div>
                 </div>
               </div>
+
+              <div class="review-content">
+                {{ comment.content }}
+                <button v-if="comment.content.length > 300" class="read-more">read more</button>
+              </div>
+
+              <div class="review-footer">
+                <button class="review-action" @click="handleLikeComment(comment)">
+                  <el-icon><Star /></el-icon>
+                  {{ comment.likes || 0 }}
+                </button>
+                <button class="review-action">
+                  <el-icon><ChatDotRound /></el-icon>
+                  {{ comment.replies?.length || 0 }}
+                </button>
+                <span class="review-time">{{ formatCommentTime(comment.createdAt) }}</span>
+              </div>
             </div>
           </div>
-
-          <!-- 空状态 -->
-          <el-empty 
-            v-if="comments.length === 0" 
-            description="还没有评论，快来发表第一条评论吧！"
-            :image-size="120"
-          />
         </div>
 
+        <!-- 发表评论框 -->
+        <div class="write-review" v-if="userStore.isLoggedIn">
+          <h3 class="write-review-title">Write a Review</h3>
+          <textarea 
+            v-model="newComment"
+            class="review-textarea"
+            placeholder="Share your thoughts about this album..."
+            :maxlength="1000"
+          ></textarea>
+          <div class="write-review-actions">
+            <span class="char-count">{{ newComment.length }}/1000</span>
+            <button 
+              class="submit-review-btn" 
+              @click="handleSubmitComment"
+              :disabled="!newComment.trim()"
+            >
+              Submit Review
+            </button>
+          </div>
+        </div>
+
+        <!-- 未登录提示 -->
+        <div class="login-prompt-review" v-else>
+          <p>Sign in to write a review</p>
+          <button class="login-btn" @click="router.push('/login')">Sign In</button>
+        </div>
       </div>
     </div>
   </div>
@@ -196,7 +269,15 @@ const userStore = useUserStore()
 
 // 数据状态
 const album = ref<Album | null>(null)
-const userRating = ref(0)
+const userRating = ref(0) // 百分制评分 0-100
+
+// 平均评分（转换为百分制）
+const averageScore = computed(() => {
+  if (!album.value) return 0
+  // 如果数据库是5分制，转换为百分制
+  const score = album.value.rating > 5 ? album.value.rating : album.value.rating * 20
+  return Math.round(score)
+})
 
 // 评论状态
 const comments = ref<any[]>([
@@ -278,19 +359,86 @@ async function loadAlbum() {
 }
 
 /**
- * 处理专辑评分
+ * 计算圆环进度条的偏移量（大圆环）
  */
-function handleRateAlbum(value: number) {
-  ElMessage.success(`你给这张专辑评了 ${value} 星`)
-  // TODO: 调用API保存评分到数据库
+function getCircleOffset(score: number): number {
+  const radius = 54
+  const circumference = 2 * Math.PI * radius
+  const progress = score / 100
+  return circumference * (1 - progress)
 }
 
 /**
- * 获取评分文案
+ * 计算用户圆环进度条的偏移量（小圆环）
  */
-function getRatingText(rating: number): string {
-  const texts = ['', '一般般', '还可以', '不错哦', '很喜欢', '超级棒！']
-  return texts[rating] || ''
+function getCircleOffsetUser(score: number): number {
+  const radius = 45
+  const circumference = 2 * Math.PI * radius
+  const progress = score / 100
+  return circumference * (1 - progress)
+}
+
+/**
+ * 根据分数获取颜色（红橙黄绿）
+ */
+function getScoreColor(score: number): string {
+  if (score >= 80) return '#10b981' // 绿色
+  if (score >= 60) return '#fbbf24' // 黄色
+  if (score >= 40) return '#f97316' // 橙色
+  return '#ef4444' // 红色
+}
+
+/**
+ * 根据分数获取标签
+ */
+function getScoreLabel(score: number): string {
+  if (score >= 90) return 'Masterpiece'
+  if (score >= 80) return 'Excellent'
+  if (score >= 70) return 'Great'
+  if (score >= 60) return 'Good'
+  if (score >= 50) return 'Decent'
+  if (score >= 40) return 'Mixed'
+  if (score >= 30) return 'Poor'
+  return 'Terrible'
+}
+
+/**
+ * 计算小圆环进度条的偏移量
+ */
+function getMiniCircleOffset(score: number): number {
+  const radius = 18
+  const circumference = 2 * Math.PI * radius
+  const progress = score / 100
+  return circumference * (1 - progress)
+}
+
+/**
+ * 提交评分和评论
+ */
+function handleSubmitReview() {
+  if (!newComment.value.trim()) {
+    ElMessage.warning('Please write your review')
+    return
+  }
+  
+  // 添加评论到列表
+  const comment = {
+    id: Date.now().toString(),
+    username: userStore.userInfo?.username || '匿名用户',
+    userAvatar: userStore.userInfo?.avatar || '',
+    userScore: userRating.value,
+    content: newComment.value.trim(),
+    likes: 0,
+    isLiked: false,
+    createdAt: new Date().toISOString(),
+    replies: []
+  }
+  
+  comments.value.unshift(comment)
+  newComment.value = ''
+  
+  ElMessage.success(`Review submitted with score: ${userRating.value}`)
+  // TODO: 调用API保存评分和评论到数据库
 }
 
 /**
@@ -407,374 +555,710 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+// AOTY 风格页面
 .album-rating-page {
   min-height: 100vh;
-  background: #121212;
+  background: #2a2e35;
   color: #fff;
-  padding-bottom: 100px;
 }
 
-// 顶部导航栏
-.rating-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: rgba(18, 18, 18, 0.95);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 16px 32px;
-  display: flex;
-  align-items: center;
-  gap: 24px;
+// AOTY 风格导航栏
+.aoty-header {
+  background: #34383f;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 12px 0;
 }
 
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: #b3b3b3;
-  font-size: 16px;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  
-  &:hover {
-    color: #fff;
-  }
-}
-
-.album-info-mini {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  
-  .mini-cover {
-    width: 48px;
-    height: 48px;
-    border-radius: 4px;
-    object-fit: cover;
-  }
-  
-  .mini-info {
-    h2 {
-      font-size: 18px;
-      font-weight: 600;
-      margin: 0 0 4px;
-      color: #fff;
-    }
-    
-    p {
-      font-size: 14px;
-      color: #b3b3b3;
-      margin: 0;
-    }
-  }
-}
-
-// 评分评论内容
-.rating-content {
-  padding: 48px 32px;
-}
-
-.content-container {
+.header-container {
   max-width: 1200px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 48px;
-  align-items: start;
+  padding: 0 24px;
 }
 
-.section-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 24px;
-}
-
-// 评分卡片
-.rating-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  padding: 32px;
-  position: sticky;
-  top: 100px;
-}
-
-.rating-display {
-  .average-rating {
-    text-align: center;
-    padding-bottom: 32px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 32px;
-    
-    .rating-score {
-      font-size: 64px;
-      font-weight: 900;
-      color: #fff;
-      line-height: 1;
-      margin-bottom: 16px;
-    }
-    
-    .rating-count {
-      font-size: 14px;
-      color: #b3b3b3;
-      margin-top: 12px;
-    }
-  }
-  
-  .user-rating {
-    text-align: center;
-    
-    .rating-prompt {
-      font-size: 16px;
-      color: #b3b3b3;
-      margin-bottom: 16px;
-    }
-    
-    .rating-hint {
-      font-size: 18px;
-      font-weight: 600;
-      color: #73BA9B;
-      margin-top: 12px;
-    }
-  }
-  
-  .login-prompt {
-    text-align: center;
-    
-    p {
-      font-size: 14px;
-      color: #b3b3b3;
-      margin-bottom: 16px;
-    }
-  }
-}
-
-// 评论区
-.comments-section {
-  .comments-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 32px;
-  }
-}
-
-.comment-input-box {
+.back-btn {
   display: flex;
-  gap: 16px;
-  margin-bottom: 32px;
-  
-  .user-avatar {
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #73BA9B 0%, #5A9B7F 100%);
-  }
-  
-  .input-wrapper {
-    flex: 1;
-    
-    .input-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 12px;
-    }
-  }
-}
-
-.login-prompt-box {
-  text-align: center;
-  padding: 40px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  margin-bottom: 32px;
-  
-  p {
-    color: #b3b3b3;
-    margin-bottom: 16px;
-  }
-}
-
-.comments-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.comment-item {
-  display: flex;
-  gap: 16px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  transition: background 0.2s ease;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 3px;
   
   &:hover {
     background: rgba(255, 255, 255, 0.05);
+    color: #fff;
   }
   
-  .comment-avatar {
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  }
-  
-  .comment-content {
-    flex: 1;
-  }
-  
-  .comment-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-    
-    .comment-username {
-      font-size: 16px;
-      font-weight: 600;
-      color: #fff;
-    }
-    
-    .comment-time {
-      font-size: 14px;
-      color: #b3b3b3;
-    }
-  }
-  
-  .comment-text {
-    font-size: 15px;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.9);
-    margin-bottom: 12px;
-  }
-  
-  .comment-actions {
-    display: flex;
-    gap: 16px;
-    
-    .action-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: none;
-      border: none;
-      color: #b3b3b3;
-      font-size: 14px;
-      cursor: pointer;
-      transition: color 0.2s ease;
-      
-      &:hover {
-        color: #fff;
-      }
-      
-      .el-icon {
-        font-size: 16px;
-      }
-    }
+  .el-icon {
+    font-size: 16px;
   }
 }
 
-.reply-input-box {
-  margin-top: 16px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  
-  .reply-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 12px;
-  }
+// 专辑信息区域
+.album-section {
+  background: #34383f;
+  padding: 32px 0 48px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 }
 
-.replies-list {
-  margin-top: 16px;
-  padding-left: 16px;
-  border-left: 2px solid rgba(255, 255, 255, 0.1);
-  
-  .reply-item {
-    display: flex;
-    gap: 12px;
-    padding: 12px 0;
-    
-    &:not(:last-child) {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .reply-avatar {
-      flex-shrink: 0;
-      background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
-    }
-    
-    .reply-content {
-      flex: 1;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: baseline;
-      
-      .reply-username {
-        font-size: 14px;
-        font-weight: 600;
-        color: #fff;
-      }
-      
-      .reply-text {
-        font-size: 14px;
-        color: rgba(255, 255, 255, 0.9);
-      }
-      
-      .reply-time {
-        font-size: 12px;
-        color: #b3b3b3;
-        margin-left: auto;
-      }
-    }
-  }
+.album-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 48px;
 }
 
-// Element Plus 组件样式覆盖
-:deep(.el-rate) {
-  .el-rate__icon {
-    font-size: 28px;
-    margin-right: 8px;
-  }
+.album-card {
+  display: flex;
+  gap: 24px;
 }
 
-:deep(.el-textarea__inner) {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.album-cover {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.album-details {
+  flex: 1;
+}
+
+.album-title {
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0 0 8px;
   color: #fff;
+}
+
+.album-artist {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 12px;
+}
+
+.album-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+// 评分区域
+.rating-section {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+// 平均评分区域
+.average-section {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.score-circle {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.circle-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circle-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 8;
+}
+
+.circle-progress {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 339.292; // 2 * π * 54
+  transition: all 0.3s ease;
+}
+
+.score-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  font-weight: 700;
+  transition: color 0.3s ease;
+}
+
+.score-info {
+  flex: 1;
+}
+
+.score-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.score-count {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+// 用户评分和评论区域
+.user-rating-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.subsection-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+.rating-input-wrapper {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.user-score-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-score-circle {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  
+  .circle-progress-user {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 282.743; // 2 * π * 45
+    transition: all 0.3s ease;
+  }
+}
+
+.user-score-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: 700;
+  transition: color 0.3s ease;
+}
+
+.user-score-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.slider-wrapper {
+  flex: 1;
+}
+
+.user-slider {
+  width: 100%;
+  height: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border-radius: 4px;
+  outline: none;
+  
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--slider-color, #10b981);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    
+    &:hover {
+      transform: scale(1.2);
+    }
+  }
+  
+  &::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--slider-color, #10b981);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    
+    &:hover {
+      transform: scale(1.2);
+    }
+  }
+  
+  &::-webkit-slider-runnable-track {
+    background: linear-gradient(
+      to right,
+      #ef4444 0%,
+      #f97316 25%,
+      #fbbf24 50%,
+      #10b981 100%
+    );
+    height: 8px;
+    border-radius: 4px;
+  }
+  
+  &::-moz-range-track {
+    background: linear-gradient(
+      to right,
+      #ef4444 0%,
+      #f97316 25%,
+      #fbbf24 50%,
+      #10b981 100%
+    );
+    height: 8px;
+    border-radius: 4px;
+  }
+}
+
+.slider-range {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.review-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  
+  &:focus {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
   
   &::placeholder {
     color: rgba(255, 255, 255, 0.3);
   }
+}
+
+.review-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.char-count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.submit-btn {
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.login-box {
+  text-align: center;
+  padding: 20px;
+  
+  p {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 12px;
+  }
+}
+
+.login-btn {
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+// 评论区 - AOTY 风格
+.reviews-section {
+  background: #2a2e35;
+  padding: 48px 0;
+}
+
+.reviews-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.reviews-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+.view-more-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+  }
+}
+
+// 评论列表
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.review-card {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: #34383f;
+  border-radius: 4px;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #3a3e45;
+  }
+}
+
+.review-left {
+  display: flex;
+  gap: 12px;
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.review-album-cover {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.review-album-info {
+  flex: 1;
+  min-width: 0;
+  
+  .review-album-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .review-album-artist {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+.review-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.reviewer-info {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.reviewer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.reviewer-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+// 小圆环评分显示
+.review-score-circle {
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+
+.mini-circle-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.mini-circle-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 3;
+}
+
+.mini-circle-progress {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 113.097; // 2 * π * 18
+  transition: all 0.3s ease;
+}
+
+.mini-score-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 700;
+  transition: color 0.3s ease;
+}
+
+.review-content {
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 12px;
+}
+
+.read-more {
+  color: rgba(255, 255, 255, 0.5);
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: 4px;
+  
+  &:hover {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: underline;
+  }
+}
+
+.review-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.review-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .el-icon {
+    font-size: 14px;
+  }
+}
+
+.review-time {
+  margin-left: auto;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+// 发表评论区域
+.write-review {
+  background: #34383f;
+  padding: 24px;
+  border-radius: 4px;
+  margin-bottom: 48px;
+}
+
+.write-review-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: #fff;
+}
+
+.review-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
   
   &:focus {
-    border-color: #73BA9B;
-  }
-}
-
-:deep(.el-input__count) {
-  background: transparent;
-  color: #b3b3b3;
-}
-
-:deep(.el-select) {
-  .el-input__wrapper {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: none;
-    
-    &:hover, &.is-focus {
-      border-color: rgba(255, 255, 255, 0.3);
-    }
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.3);
   }
   
-  .el-input__inner {
-    color: #fff;
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.write-review-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.char-count {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.submit-review-btn {
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.login-prompt-review {
+  text-align: center;
+  padding: 40px 24px;
+  background: #34383f;
+  border-radius: 4px;
+  
+  p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 16px;
   }
 }
 
@@ -785,7 +1269,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: #121212;
+  background: #2a2e35;
   color: #fff;
   
   .loading-icon {
@@ -800,30 +1284,50 @@ onMounted(() => {
 }
 
 // 响应式设计
-@media (max-width: 1200px) {
-  .content-container {
+@media (max-width: 1024px) {
+  .album-container {
     grid-template-columns: 1fr;
     gap: 32px;
   }
   
-  .rating-card {
+  .rating-section {
     position: static;
   }
 }
 
 @media (max-width: 768px) {
-  .rating-header {
-    padding: 12px 16px;
+  .album-section, .reviews-section {
+    padding: 24px 0;
   }
   
-  .rating-content {
-    padding: 32px 16px;
+  .album-container, .reviews-container {
+    padding: 0 16px;
   }
   
-  .comment-input-box {
+  .album-card {
     flex-direction: column;
-    align-items: flex-start;
+  }
+  
+  .album-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+  
+  .score-display {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .review-card {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .review-left {
+    width: 100%;
   }
 }
 </style>
+
 

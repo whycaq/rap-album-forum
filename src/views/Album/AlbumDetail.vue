@@ -2,6 +2,12 @@
   <div class="album-detail-page" v-if="album">
     <!-- 专辑头部 - Spotify风格 -->
     <div class="album-header" :style="{ backgroundColor: dominantColor }">
+      <!-- 返回按钮 -->
+      <button class="back-home-btn" @click="router.push('/')">
+        <el-icon><ArrowLeft /></el-icon>
+        <span>Back</span>
+      </button>
+      
       <div class="header-content">
         <!-- 专辑封面 -->
         <div class="album-cover">
@@ -86,16 +92,17 @@
       </div>
     </div>
 
-    <!-- 评分评论入口 -->
+    <!-- 评分评论入口 - AOTY 风格 -->
     <div class="rating-comment-entry">
       <div class="entry-container">
         <div class="entry-info">
-          <h3>参与讨论</h3>
-          <p>分享你对这张专辑的看法，查看其他乐迷的评论</p>
+          <h3>Rate & Review</h3>
+          <p>Share your thoughts and see what other fans are saying</p>
         </div>
-        <el-button type="primary" size="large" @click="goToRatingPage">
-          评分与评论
-        </el-button>
+        <button class="rate-btn" @click="goToRatingPage">
+          <span>Rate & Review</span>
+          <el-icon><ArrowRight /></el-icon>
+        </button>
       </div>
     </div>
 
@@ -112,7 +119,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { VideoPlay, VideoPause, Star, MoreFilled, Clock, Loading } from '@element-plus/icons-vue'
+import { VideoPlay, VideoPause, Star, MoreFilled, Clock, Loading, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { getAlbumsFromSupabase, getSongsFromSupabase } from '@/api/album'
 import type { Album, Song } from '@/types/album'
 import { usePlayerStore } from '@/stores/player'
@@ -252,11 +259,14 @@ function extractColor(event: Event) {
 }
 
 /**
- * 跳转到评分评论页面
+ * 跳转到专辑评分详情页
  */
 function goToRatingPage() {
   if (!album.value) return
-  router.push({ name: 'AlbumRating', params: { id: album.value.id } })
+  router.push({ 
+    name: 'AlbumRating', 
+    params: { id: album.value.id } 
+  })
 }
 
 onMounted(() => {
@@ -273,6 +283,37 @@ onMounted(() => {
   background: #121212;
   color: #fff;
   padding-bottom: 100px;
+}
+
+// 返回按钮（浮动在彩色背景上）
+.back-home-btn {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+  }
+  
+  .el-icon {
+    font-size: 18px;
+  }
 }
 
 // 专辑头部
@@ -582,37 +623,63 @@ onMounted(() => {
   margin: 0 auto;
   
   .entry-container {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 40px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 32px;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     
     &:hover {
-      background: rgba(255, 255, 255, 0.08);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.12);
     }
     
     .entry-info {
       flex: 1;
       
       h3 {
-        font-size: 28px;
-        font-weight: 700;
+        font-size: 18px;
+        font-weight: 600;
         color: #fff;
-        margin: 0 0 12px;
+        margin: 0 0 8px;
       }
       
       p {
-        font-size: 16px;
-        color: #b3b3b3;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.5);
         margin: 0;
       }
     }
+  }
+}
+
+.rate-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateX(4px);
+  }
+  
+  .el-icon {
+    font-size: 16px;
   }
 }
 

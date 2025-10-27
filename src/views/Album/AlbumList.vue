@@ -5,6 +5,7 @@
       <div class="header-content">
         <button class="back-btn" @click="router.push('/')">
           <el-icon><ArrowLeft /></el-icon>
+          <span>Back</span>
         </button>
         
         <h1 class="page-title">Albums</h1>
@@ -280,21 +281,34 @@ onMounted(() => {
 .back-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
+  gap: 6px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: all 0.2s;
   
   &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
     color: #fff;
   }
   
   .el-icon {
-    font-size: 20px;
+    font-size: 16px;
+  }
+  
+  span {
+    display: none;
+  }
+  
+  @media (min-width: 768px) {
+    span {
+      display: inline;
+    }
   }
 }
 

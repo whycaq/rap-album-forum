@@ -130,9 +130,9 @@
       <section class="section">
         <div class="section-header">
           <h2 class="section-title">Random Pick</h2>
-          <button class="view-all-btn" @click="getRandomSong">
+          <button class="shuffle-btn" @click="getRandomSong">
             <el-icon><Refresh /></el-icon>
-            换一首
+            <span>Shuffle</span>
           </button>
         </div>
         
@@ -181,16 +181,16 @@
             </div>
             
             <div class="song-actions">
-              <el-button type="primary" size="large" @click="playSong(randomSong)">
+              <button class="action-btn primary" @click="playSong(randomSong)">
                 <el-icon><VideoPlay /></el-icon>
-                播放歌曲
-              </el-button>
-              <el-button size="large" @click="goToAlbum(randomSong.albumId)">
-                查看专辑
-              </el-button>
-              <el-button size="large" circle @click="getRandomSong">
+                <span>Play</span>
+              </button>
+              <button class="action-btn" @click="goToAlbum(randomSong.albumId)">
+                <span>View Album</span>
+              </button>
+              <button class="action-btn icon-only" @click="getRandomSong" title="换一首">
                 <el-icon><Refresh /></el-icon>
-              </el-button>
+              </button>
             </div>
           </div>
         </div>
@@ -198,7 +198,7 @@
         <div v-else class="random-song-empty">
           <el-icon class="empty-icon"><Headset /></el-icon>
           <p>暂无歌曲数据</p>
-          <el-button @click="loadAlbums">刷新</el-button>
+          <button class="action-btn" @click="loadAlbums">刷新</button>
         </div>
       </section>
     </div>
@@ -275,11 +275,29 @@ async function loadAllSongs() {
     
     if (error) throw error
     
-    // 将歌曲与专辑关联
-    allSongs.value = songs?.map(song => ({
-      ...song,
-      album: allAlbums.value.find(album => album.id === song.albumId)
-    })) || []
+    // 将歌曲与专辑关联，同时处理字段名格式
+    allSongs.value = songs?.map(song => {
+      // 支持数据库的下划线字段名
+      const albumId = song.albumId || song.album_id
+      const audioUrl = song.audioUrl || song.audio_url
+      
+      const album = allAlbums.value.find(a => a.id === albumId)
+      
+      return {
+        ...song,
+        id: song.id,
+        title: song.title,
+        albumId: albumId,
+        audioUrl: audioUrl,
+        duration: song.duration,
+        album: album
+      }
+    }) || []
+    
+    console.log('加载的歌曲数据:', allSongs.value.length, '首')
+    if (allSongs.value.length > 0) {
+      console.log('示例歌曲:', allSongs.value[0])
+    }
     
     // 初始化时获取一首随机歌曲
     if (allSongs.value.length > 0) {
@@ -960,18 +978,88 @@ onMounted(() => {
   }
 }
 
+// AOTY 风格的简约按钮
+.shuffle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  .el-icon {
+    font-size: 14px;
+  }
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+  }
+}
+
 .song-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: auto;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
   
-  .el-button {
-    flex: 1;
+  .el-icon {
+    font-size: 16px;
+  }
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  &.primary {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-weight: 500;
     
-    &.is-circle {
-      flex: 0 0 auto;
-      width: 48px;
-      height: 48px;
+    &:hover {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+  }
+  
+  &.icon-only {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    
+    .el-icon {
+      font-size: 18px;
     }
   }
 }
@@ -1078,11 +1166,12 @@ onMounted(() => {
   .song-actions {
     flex-direction: column;
     
-    .el-button {
+    .action-btn {
       width: 100%;
+      flex: none;
       
-      &.is-circle {
-        width: 48px;
+      &.icon-only {
+        width: 42px;
         align-self: center;
       }
     }
