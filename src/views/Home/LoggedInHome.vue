@@ -126,31 +126,79 @@
         </div>
       </section>
 
-      <!-- 社区动态 -->
+      <!-- 随机推荐歌曲 -->
       <section class="section">
         <div class="section-header">
-          <h2 class="section-title">Community</h2>
-          <button class="view-all-btn" @click="router.push('/forum')">View All →</button>
+          <h2 class="section-title">Random Pick</h2>
+          <button class="view-all-btn" @click="getRandomSong">
+            <el-icon><Refresh /></el-icon>
+            换一首
+          </button>
         </div>
         
-        <div class="community-grid">
-          <div class="community-card" @click="router.push('/forum')">
-            <div class="community-icon">💬</div>
-            <h3>Album Discussion</h3>
-            <p>Join the conversation</p>
+        <div v-if="randomSong" class="random-song-card">
+          <div class="song-cover-wrapper">
+            <img 
+              :src="randomSong.album?.coverUrl || '/default-album.jpg'" 
+              :alt="randomSong.title" 
+              class="song-cover" 
+            />
+            <div class="song-overlay" @click="playSong(randomSong)">
+              <el-icon class="play-icon-large"><VideoPlay /></el-icon>
+            </div>
           </div>
           
-          <div class="community-card disabled">
-            <div class="community-icon">🤖</div>
-            <h3>AI Assistant</h3>
-            <p>Coming Soon</p>
+          <div class="song-details">
+            <div class="song-header">
+              <h3 class="song-title">{{ randomSong.title }}</h3>
+              <div class="song-badges">
+                <span class="song-badge">
+                  <el-icon><Clock /></el-icon>
+                  {{ formatDuration(randomSong.duration) }}
+                </span>
+                <span v-if="randomSong.album" class="song-badge">
+                  {{ randomSong.album.releaseDate.split('-')[0] }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="song-meta">
+              <div class="meta-item" @click="goToAlbum(randomSong.albumId)">
+                <span class="meta-label">专辑</span>
+                <span class="meta-value">{{ randomSong.album?.title || '未知专辑' }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">艺人</span>
+                <span class="meta-value">{{ randomSong.album?.artist || '未知艺人' }}</span>
+              </div>
+              <div v-if="randomSong.album" class="meta-item">
+                <span class="meta-label">评分</span>
+                <span class="meta-value rating-value">
+                  <el-icon><Star /></el-icon>
+                  {{ randomSong.album.rating.toFixed(1) }}
+                </span>
+              </div>
+            </div>
+            
+            <div class="song-actions">
+              <el-button type="primary" size="large" @click="playSong(randomSong)">
+                <el-icon><VideoPlay /></el-icon>
+                播放歌曲
+              </el-button>
+              <el-button size="large" @click="goToAlbum(randomSong.albumId)">
+                查看专辑
+              </el-button>
+              <el-button size="large" circle @click="getRandomSong">
+                <el-icon><Refresh /></el-icon>
+              </el-button>
+            </div>
           </div>
-          
-          <div class="community-card" @click="router.push('/albums')">
-            <div class="community-icon">📊</div>
-            <h3>Top Charts</h3>
-            <p>Explore rankings</p>
-          </div>
+        </div>
+        
+        <div v-else class="random-song-empty">
+          <el-icon class="empty-icon"><Headset /></el-icon>
+          <p>暂无歌曲数据</p>
+          <el-button @click="loadAlbums">刷新</el-button>
         </div>
       </section>
     </div>
@@ -160,20 +208,25 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, VideoPlay, Star, User, SwitchButton } from '@element-plus/icons-vue'
+import { Search, VideoPlay, Star, User, SwitchButton, Refresh, Clock, Headset } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { useAlbumStore } from '@/stores/album'
+import { usePlayerStore } from '@/stores/player'
 import { getAlbumsFromSupabase } from '@/api/album'
+import { supabase } from '@/utils/supabase'
 import type { Album } from '@/types/album'
 
 const router = useRouter()
 const userStore = useUserStore()
 const albumStore = useAlbumStore()
+const playerStore = usePlayerStore()
 
 // 数据
 const searchQuery = ref('')
 const allAlbums = ref<Album[]>([])
+const allSongs = ref<any[]>([])
+const randomSong = ref<any>(null)
 
 // 用户信息
 const username = computed(() => userStore.userInfo?.username || 'User')
@@ -201,10 +254,86 @@ async function loadAlbums() {
   try {
     const albums = await getAlbumsFromSupabase(50)
     allAlbums.value = albums
+    // 加载完专辑后，加载所有歌曲
+    await loadAllSongs()
   } catch (error) {
     console.error('加载专辑失败:', error)
     ElMessage.error('加载专辑失败')
   }
+}
+
+/**
+ * 加载所有歌曲
+ */
+async function loadAllSongs() {
+  try {
+    const { data: songs, error } = await supabase
+      .from('songs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200)
+    
+    if (error) throw error
+    
+    // 将歌曲与专辑关联
+    allSongs.value = songs?.map(song => ({
+      ...song,
+      album: allAlbums.value.find(album => album.id === song.albumId)
+    })) || []
+    
+    // 初始化时获取一首随机歌曲
+    if (allSongs.value.length > 0) {
+      getRandomSong()
+    }
+  } catch (error) {
+    console.error('加载歌曲失败:', error)
+  }
+}
+
+/**
+ * 获取随机歌曲
+ */
+function getRandomSong() {
+  if (allSongs.value.length === 0) {
+    ElMessage.warning('暂无可用歌曲')
+    return
+  }
+  
+  const randomIndex = Math.floor(Math.random() * allSongs.value.length)
+  randomSong.value = allSongs.value[randomIndex]
+}
+
+/**
+ * 播放歌曲
+ */
+function playSong(song: any) {
+  if (!song.audioUrl) {
+    ElMessage.warning('该歌曲暂无音频文件')
+    return
+  }
+  
+  // 使用 player store 播放歌曲
+  playerStore.playSong({
+    id: song.id,
+    title: song.title,
+    artist: song.album?.artist || '未知艺人',
+    albumTitle: song.album?.title || '未知专辑',
+    albumCover: song.album?.coverUrl || '',
+    audioUrl: song.audioUrl,
+    duration: song.duration || 0
+  })
+  
+  ElMessage.success(`正在播放: ${song.title}`)
+}
+
+/**
+ * 格式化时长（秒 -> mm:ss）
+ */
+function formatDuration(seconds: number | undefined): string {
+  if (!seconds) return '--:--'
+  const minutes = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${minutes}:${secs.toString().padStart(2, '0')}`
 }
 
 /**
@@ -686,49 +815,185 @@ onMounted(() => {
   }
 }
 
-// 社区卡片
-.community-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+// 随机推荐歌曲卡片
+.random-song-card {
+  display: flex;
+  gap: 32px;
+  padding: 32px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  transition: all 0.3s;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.song-cover-wrapper {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  
+  &:hover {
+    .song-overlay {
+      opacity: 1;
+    }
+  }
+}
+
+.song-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.song-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.play-icon-large {
+  font-size: 64px;
+  color: #fff;
+}
+
+.song-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.song-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 16px;
 }
 
-.community-card {
-  padding: 32px 24px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  text-align: center;
+.song-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.song-badges {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.song-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  
+  .el-icon {
+    font-size: 14px;
+  }
+}
+
+.song-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
   transition: all 0.2s;
   
-  &:hover:not(.disabled) {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.12);
-    transform: translateY(-2px);
+  &:hover {
+    opacity: 0.8;
   }
   
-  &.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  &:last-child {
+    border-bottom: none;
   }
+}
+
+.meta-label {
+  min-width: 60px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.meta-value {
+  font-size: 15px;
+  color: #fff;
+  font-weight: 500;
   
-  .community-icon {
-    font-size: 40px;
+  &.rating-value {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #ffd700;
+    
+    .el-icon {
+      font-size: 16px;
+    }
+  }
+}
+
+.song-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  
+  .el-button {
+    flex: 1;
+    
+    &.is-circle {
+      flex: 0 0 auto;
+      width: 48px;
+      height: 48px;
+    }
+  }
+}
+
+// 空状态
+.random-song-empty {
+  padding: 80px 32px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  
+  .empty-icon {
+    font-size: 64px;
+    color: rgba(255, 255, 255, 0.2);
     margin-bottom: 16px;
   }
   
-  h3 {
-    font-size: 16px;
-    font-weight: 500;
-    margin: 0 0 8px;
-    color: #fff;
-  }
-  
   p {
-    font-size: 13px;
+    font-size: 14px;
     color: rgba(255, 255, 255, 0.5);
-    margin: 0;
+    margin: 0 0 24px;
   }
 }
 
@@ -744,8 +1009,15 @@ onMounted(() => {
     grid-template-columns: repeat(3, 1fr);
   }
   
-  .community-grid {
-    grid-template-columns: 1fr;
+  .random-song-card {
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .song-cover-wrapper {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
   }
 }
 
@@ -793,6 +1065,27 @@ onMounted(() => {
   
   .section-title {
     font-size: 20px;
+  }
+  
+  .random-song-card {
+    padding: 20px;
+  }
+  
+  .song-title {
+    font-size: 22px;
+  }
+  
+  .song-actions {
+    flex-direction: column;
+    
+    .el-button {
+      width: 100%;
+      
+      &.is-circle {
+        width: 48px;
+        align-self: center;
+      }
+    }
   }
 }
 </style>
