@@ -14,12 +14,46 @@
       </div>
     </header>
 
+    <!-- 网站介绍区域 -->
+    <section class="intro-hero">
+      <div class="intro-overlay"></div>
+      <div class="intro-content">
+        <h1 class="intro-title">Explore Hip-Hop Culture</h1>
+        <p class="intro-description">
+          汇聚全球说唱专辑，连接音乐爱好者的听歌、评分与分享。
+          在这里，你可以实时探索社区的音乐品味与趋势，发现那些值得一听再听的经典作品。
+        </p>
+        
+        <div class="cta-buttons">
+          <el-button type="primary" size="large" @click="router.push('/register')">
+            开始探索
+          </el-button>
+          <el-button size="large" @click="router.push('/login')">
+            登录
+          </el-button>
+        </div>
+        
+        <!-- 向下滚动指示器 -->
+        <div class="scroll-down" @click="scrollToAlbums">
+          <div class="scroll-text">试听专辑</div>
+          <div class="scroll-arrow">
+            <el-icon :size="24"><ArrowDown /></el-icon>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 专辑轮播区域 -->
     <main class="carousel-container">
+      <div class="section-header-wrapper">
+        <h2 class="section-title">精选专辑试听</h2>
+        <p class="section-subtitle">探索说唱音乐的无限魅力</p>
+      </div>
+      
       <div class="carousel-track" :class="{ 'no-transition': !isTransitioning }" :style="{ transform: `translateX(${slideOffset}px)` }">
         <!-- 渲染所有专辑 -->
         <div 
-          v-for="(album, index) in displayAlbums"
+          v-for="(album, index) in displayAlbums" 
           :key="`album-${album.id}-${index}`"
           class="album-card"
           :class="{ 'active': index === activeAlbumIndex }"
@@ -36,7 +70,7 @@
                 <VideoPause v-if="playerStore.isPlaying" />
                 <VideoPlay v-else />
               </el-icon>
-            </div>
+          </div>
           </div>
           <div class="album-info" v-if="index === activeAlbumIndex">
             <h3 class="album-title">{{ album.title }}</h3>
@@ -51,14 +85,6 @@
         <button class="nav-btn next" @click="nextAlbum">›</button>
       </div>
     </main>
-
-    <!-- 向下滚动指示器 -->
-    <div class="scroll-indicator" @click="scrollToIntro">
-      <div class="indicator-text">向下了解更多</div>
-      <div class="indicator-arrow">
-        <el-icon :size="24"><ArrowDown /></el-icon>
-      </div>
-    </div>
 
     <!-- 播放控制栏 -->
     <footer class="player-bar" v-if="playerStore.hasCurrentSong">
@@ -94,58 +120,6 @@
         </div>
       </div>
     </footer>
-  </div>
-  
-  <!-- 第二屏：论坛介绍 - 只在未登录时显示 -->
-  <div class="intro-section" v-if="!userStore.isLoggedIn">
-    <div class="intro-content">
-      <h1 class="intro-title">发现说唱的力量</h1>
-      <p class="intro-subtitle">一个专注于说唱音乐文化的专业论坛</p>
-      
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🎵</div>
-          <h3 class="feature-title">海量专辑</h3>
-          <p class="feature-desc">收录国内外经典说唱专辑，提供高质量试听体验</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">💬</div>
-          <h3 class="feature-title">深度交流</h3>
-          <p class="feature-desc">与全球说唱爱好者分享见解，讨论音乐背后的故事</p>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">⭐</div>
-          <h3 class="feature-title">专业评分</h3>
-          <p class="feature-desc">为喜欢的专辑评分，发现更多优质作品</p>
-        </div>
-      </div>
-      
-      <div class="cta-buttons">
-        <el-button type="primary" size="large" @click="router.push('/register')">
-          立即注册
-        </el-button>
-        <el-button size="large" @click="router.push('/login')">
-          已有账号？登录
-        </el-button>
-      </div>
-      
-      <div class="stats-banner">
-        <div class="stat-item">
-          <div class="stat-number">{{ albums.length }}+</div>
-          <div class="stat-label">专辑收录</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number">5+</div>
-          <div class="stat-label">顶级艺人</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number">99+</div>
-          <div class="stat-label">精选歌曲</div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -457,7 +431,7 @@ function checkAndResetPosition() {
       
       // 下一帧重新启用过渡
       setTimeout(() => {
-        isTransitioning.value = true
+  isTransitioning.value = true
       }, 50)
     }
     // 如果接近第三组边界，瞬移到第二组
@@ -586,12 +560,12 @@ async function goToAlbum(offset: number) {
 }
 
 /**
- * 滚动到介绍区域
+ * 滚动到专辑展示区域
  */
-function scrollToIntro() {
-  const introSection = document.querySelector('.intro-section')
-  if (introSection) {
-    introSection.scrollIntoView({ behavior: 'smooth' })
+function scrollToAlbums() {
+  const albumsSection = document.querySelector('.carousel-container')
+  if (albumsSection) {
+    albumsSection.scrollIntoView({ behavior: 'smooth' })
   }
 }
 
@@ -615,7 +589,8 @@ onMounted(async () => {
   min-height: 100vh;
   background: #000000;
   color: #fff;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .header {
@@ -624,8 +599,9 @@ onMounted(async () => {
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   padding: 16px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -669,13 +645,126 @@ onMounted(async () => {
   }
 }
 
-.carousel-container {
-  position: relative;
-  height: 100vh;
+// 网站介绍区域
+.intro-hero {
+  min-height: 100vh;
+  background-image: url('/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 100px 32px 80px;
+  position: relative;
+}
+
+.intro-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, 
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.6) 50%,
+    rgba(30, 58, 95, 0.7) 100%    /* 底部渐变到蓝色，与下方衔接 */
+  );
+  z-index: 0;
+}
+
+.intro-content {
+  max-width: 900px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.intro-title {
+  font-size: 56px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 32px;
+  letter-spacing: -0.5px;
+}
+
+.intro-description {
+  font-size: 18px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 48px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.scroll-down {
+  margin-top: 64px;
+  text-align: center;
+  cursor: pointer;
+  animation: bounce 2s infinite;
+  
+  .scroll-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 8px;
+  }
+  
+  .scroll-arrow {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  &:hover {
+    .scroll-text,
+    .scroll-arrow {
+      color: #fff;
+    }
+  }
+}
+
+.carousel-container {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   overflow-x: hidden;
   overflow-y: hidden;
+  background: linear-gradient(180deg, 
+    #1e3a5f 0%,        /* 浅蓝色 - 与图片衔接 */
+    #152847 25%,       /* 中蓝色 */
+    #0d1b2a 50%,       /* 深蓝色 */
+    #050a0f 75%,       /* 接近黑色 */
+    #000000 100%       /* 纯黑色 */
+  );
+  padding: 80px 0;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 20% 20%, rgba(70, 130, 180, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(100, 100, 150, 0.05) 0%, transparent 40%);
+    pointer-events: none;
+  }
+}
+
+.section-header-wrapper {
+  text-align: center;
+  margin-bottom: 48px;
+  position: relative;
+  z-index: 1;
+  
+  .section-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 12px;
+  }
+  
+  .section-subtitle {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+  }
 }
 
 .carousel-track {
@@ -684,6 +773,8 @@ onMounted(async () => {
   padding: 0 100px;
   transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
   will-change: transform;
+  position: relative;
+  z-index: 1;
   
   // 禁用过渡动画（用于无缝循环的瞬间跳转）
   &.no-transition {
@@ -697,8 +788,8 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.3s ease;
   opacity: 0.5;
-  
-  &:hover {
+    
+    &:hover {
     opacity: 0.7;
     transform: translateY(-4px);
   }
@@ -797,7 +888,8 @@ onMounted(async () => {
   justify-content: space-between;
   padding: 0 40px;
   pointer-events: none;
-  transform: translateY(-50%);
+  transform: translateY(0);
+  z-index: 2;
 }
 
 .nav-btn {
@@ -833,8 +925,9 @@ onMounted(async () => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.98);
-  backdrop-filter: blur(20px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 16px 24px;
   z-index: 999;
@@ -948,118 +1041,12 @@ onMounted(async () => {
   text-align: center;
 }
 
-// 滚动指示器
-.scroll-indicator {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  cursor: pointer;
-  z-index: 10;
-  animation: bounce 2s infinite;
-  
-  .indicator-text {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 8px;
-  }
-  
-  .indicator-arrow {
-    color: rgba(255, 255, 255, 0.6);
-  }
-  
-  &:hover {
-    .indicator-text,
-    .indicator-arrow {
-      color: #fff;
-    }
-  }
-}
-
-// 当播放栏显示时，调整滚动指示器的位置
-.minimal-home:has(.player-bar) .scroll-indicator {
-  bottom: 120px;
-}
-
 @keyframes bounce {
   0%, 100% {
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
   50% {
-    transform: translateX(-50%) translateY(-10px);
-  }
-}
-
-// 第二屏：介绍区域
-.intro-section {
-  min-height: 100vh;
-  background: #000000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 32px;
-  position: relative;
-}
-
-.intro-content {
-  max-width: 1200px;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-.intro-title {
-  font-size: 64px;
-  font-weight: 900;
-  color: #fff;
-  margin: 0 0 16px;
-}
-
-.intro-subtitle {
-  font-size: 24px;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0 0 64px;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
-  margin-bottom: 64px;
-}
-
-.feature-card {
-  padding: 32px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-4px);
-  }
-  
-  .feature-icon {
-    font-size: 56px;
-    margin-bottom: 20px;
-  }
-  
-  .feature-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #fff;
-    margin: 0 0 12px;
-  }
-  
-  .feature-desc {
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.7);
-    line-height: 1.6;
-    margin: 0;
+    transform: translateY(-10px);
   }
 }
 
@@ -1096,28 +1083,6 @@ onMounted(async () => {
   border-color: rgba(255, 255, 255, 0.5);
 }
 
-.stats-banner {
-  display: flex;
-  justify-content: center;
-  gap: 80px;
-  
-  .stat-item {
-    text-align: center;
-    
-    .stat-number {
-      font-size: 48px;
-      font-weight: 900;
-      color: #fff;
-      margin-bottom: 8px;
-    }
-    
-    .stat-label {
-      font-size: 16px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-  }
-}
-
 @media (max-width: 768px) {
   .carousel-track {
     gap: 16px;
@@ -1145,30 +1110,29 @@ onMounted(async () => {
   }
   
   // 介绍区域响应式
+  .intro-hero {
+    padding: 80px 20px 60px;
+  }
+  
   .intro-title {
-    font-size: 40px;
+    font-size: 32px;
   }
   
-  .intro-subtitle {
-    font-size: 18px;
+  .intro-description {
+    font-size: 16px;
   }
   
-  .features-grid {
-    grid-template-columns: 1fr;
-    gap: 24px;
+  .scroll-down {
+    margin-top: 40px;
   }
   
   .cta-buttons {
     flex-direction: column;
+    padding: 0 20px;
     
     :deep(.el-button) {
       width: 100%;
     }
-  }
-  
-  .stats-banner {
-    flex-direction: column;
-    gap: 32px;
   }
 }
 </style>

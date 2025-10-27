@@ -205,32 +205,9 @@ async function handleRegister() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+  background: #000000;
   position: relative;
   overflow: hidden;
-  
-  // 添加装饰性背景元素
-  &::before {
-    content: '';
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(115, 186, 155, 0.15) 0%, transparent 70%);
-    top: -250px;
-    left: -250px;
-    border-radius: 50%;
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(115, 186, 155, 0.1) 0%, transparent 70%);
-    bottom: -200px;
-    right: -200px;
-    border-radius: 50%;
-  }
 }
 
 .register-container {
@@ -242,12 +219,12 @@ async function handleRegister() {
 }
 
 .register-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(115, 186, 155, 0.2);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   padding: 48px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .register-header {
@@ -259,9 +236,6 @@ async function handleRegister() {
     font-weight: 700;
     margin: 0 0 8px 0;
     color: #fff;
-    background: linear-gradient(135deg, #73BA9B 0%, #8BC4A8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
   }
 
   p {
@@ -283,14 +257,14 @@ async function handleRegister() {
     box-shadow: none;
     
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(115, 186, 155, 0.5);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.3);
     }
     
     &.is-focus {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(115, 186, 155, 0.8);
-      box-shadow: 0 0 0 4px rgba(115, 186, 155, 0.15);
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.5);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
     }
   }
   
@@ -308,13 +282,13 @@ async function handleRegister() {
 }
 
 :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #73BA9B 0%, #5A9B7F 100%);
+  background: #fff;
+  color: #000;
   border: none;
   font-weight: 600;
   
   &:hover {
-    background: linear-gradient(135deg, #8BC4A8 0%, #73BA9B 100%);
-    box-shadow: 0 4px 16px rgba(115, 186, 155, 0.6);
+    background: rgba(255, 255, 255, 0.9);
   }
 }
 
@@ -328,12 +302,14 @@ async function handleRegister() {
     margin-right: 8px;
   }
   
-  :deep(.el-button) {
-    color: #73BA9B;
+  :deep(.el-button.el-button--text) {
+    color: #fff !important;
     font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
     
     &:hover {
-      color: #8BC4A8;
+      color: rgba(255, 255, 255, 0.85) !important;
     }
   }
 }
